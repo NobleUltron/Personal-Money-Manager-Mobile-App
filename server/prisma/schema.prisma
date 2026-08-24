@@ -1,0 +1,141 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                    BigInt         @id @default(autoincrement())
+  username              String         @unique
+  email                 String?
+  password              String
+  profile_picture       String?
+  currency              String         @default("UGX")
+  currency_symbol       String         @default("UGX")
+  two_factor_enabled    Boolean        @default(false)
+  two_factor_code       String?
+  two_factor_expires_at DateTime?
+  remember_token        String?
+  created_at            DateTime       @default(now())
+  updated_at            DateTime       @updatedAt
+
+  accounts              Account[]
+  budgets               Budget[]
+  subscriptions         Subscription[]
+  loans                 Loan[]
+  goals                 Goal[]
+
+  @@map("users")
+}
+
+model Account {
+  id              String         @id @default(uuid())
+  user_id         BigInt
+  name            String
+  bank_name       String?
+  account_number  String?
+  type            String         @default("Checking")
+  initial_balance Decimal        @default(0.00) @db.Decimal(15, 2)
+  created_at      DateTime       @default(now())
+  updated_at      DateTime       @updatedAt
+
+  user            User           @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  transactions    Transaction[]
+  subscriptions   Subscription[]
+
+  @@map("accounts")
+}
+
+model Transaction {
+  id         String   @id @default(uuid())
+  accountId  String
+  type       String   // deposit, withdrawal, income, expense
+  amount     Decimal  @db.Decimal(15, 2)
+  date       DateTime @db.Date
+  reason     String?  @default("")
+  category   String   @default("Other")
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  account    Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@map("transactions")
+}
+
+model Budget {
+  id         String   @id @default(uuid())
+  user_id    BigInt
+  category   String   @db.VarChar(50)
+  amount     Decimal  @db.Decimal(15, 2)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, category])
+  @@map("budgets")
+}
+
+model Subscription {
+  id            String   @id @default(uuid())
+  user_id       BigInt
+  accountId     String
+  name          String   @db.VarChar(100)
+  amount        Decimal  @db.Decimal(15, 2)
+  frequency     String   @default("monthly") // monthly, yearly, weekly
+  next_due_date DateTime @db.Date
+  category      String   @default("Other") @db.VarChar(50)
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  user          User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  account       Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+}
+
+model Loan {
+  id          String    @id @default(uuid())
+  user_id     BigInt
+  type        String    @db.VarChar(50) // borrowed, lent
+  name        String
+  amount      Decimal   @db.Decimal(15, 2)
+  amount_paid Decimal   @default(0.00) @db.Decimal(15, 2)
+  due_date    DateTime? @db.Date
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+
+  user        User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("loans")
+}
+
+model Goal {
+  id             BigInt    @id @default(autoincrement())
+  user_id        BigInt
+  name           String
+  target_amount  Decimal   @db.Decimal(15, 2)
+  current_amount Decimal   @default(0.00) @db.Decimal(15, 2)
+  target_date    DateTime? @db.Date
+  category       String    @default("General")
+  color          String    @default("#6366f1")
+  notes          String?
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @updatedAt
+
+  user           User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("goals")
+}
+
+model PasswordResetToken {
+  username   String    @id
+  token      String
+  created_at DateTime? @default(now())
+
+  @@map("password_reset_tokens")
+}
+
