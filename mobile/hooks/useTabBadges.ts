@@ -1,12 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
-import { budgetsApi, subscriptionsApi } from '../services/api';
-import { useNotifications } from '../context/NotificationsContext';
+import { budgetsApi, accountsApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { Budget, Subscription } from '../types';
+import { Budget, Account } from '../types';
 
 export function useTabBadges() {
   const { user } = useAuth();
-  const { unreadCount } = useNotifications();
 
   const { data: budgets } = useQuery<Budget[]>({
     queryKey: ['budgets'],
@@ -14,13 +12,13 @@ export function useTabBadges() {
     enabled: !!user,
   });
 
-  const { data: subscriptions } = useQuery<Subscription[]>({
-    queryKey: ['subscriptions'],
-    queryFn: subscriptionsApi.getAll,
+  const { data: accounts } = useQuery<Account[]>({
+    queryKey: ['accounts'],
+    queryFn: accountsApi.getAll,
     enabled: !!user,
   });
 
-  // Budget alert: true if any budget is over or >= 90% spent
+  // Budget alert: true ONLY if any active budget is near/over limit (>= 90%)
   const hasBudgetAlert = budgets?.some((b) => {
     if (b.isOver) return true;
     if (b.percentage !== undefined && b.percentage >= 90) return true;
@@ -29,19 +27,16 @@ export function useTabBadges() {
     return amount > 0 && (spent / amount) >= 0.9;
   }) || false;
 
-  // Bills alert: true if any bill is due within 3 days or overdue (up to 30 days)
-  const hasBillAlert = subscriptions?.some((s) => {
-    if (!s.next_due_date) return false;
-    const due = new Date(s.next_due_date).getTime();
-    const now = Date.now();
-    const daysUntil = (due - now) / (1000 * 60 * 60 * 24);
-    return daysUntil <= 3 && daysUntil >= -30;
+  // Account alert: true only if any account is overdrawn / negative balance
+  const hasAccountAlert = accounts?.some((a) => {
+    const balance = Number(a.balance) || 0;
+    return balance < 0;
   }) || false;
 
   return {
-    index: unreadCount > 0 || hasBillAlert, // Dashboard catches global unread and upcoming bills
-    accounts: false, // Extendable for low balance or disconnected banks later
-    budgets: hasBudgetAlert, // Lights up if budgets are near/over limits
-    settings: unreadCount > 0, // More tab catches global unread notifs
+    index: false,              // Clean: Notifications belong on the top header bell
+    accounts: hasAccountAlert, // Contextual: Warns if an account is overdrawn
+    budgets: hasBudgetAlert,   // Contextual: Warns if a budget is critically high
+    settings: false,           // Clean: No redundant global badges
   };
 }
