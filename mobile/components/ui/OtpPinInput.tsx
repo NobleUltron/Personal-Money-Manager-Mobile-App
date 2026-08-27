@@ -35,7 +35,6 @@ export const OtpPinInput: React.FC<OtpPinInputProps> = ({
   const inputRef = useRef<TextInput>(null);
 
   const digits = value.split('');
-  const isFilled = value.length === length;
 
   useEffect(() => {
     if (autoFocus) {
@@ -94,7 +93,7 @@ export const OtpPinInput: React.FC<OtpPinInputProps> = ({
         caretHidden
       />
 
-      {/* 6 Discrete Pin Boxes */}
+      {/* 6 Discrete Pin Boxes - Perfectly Balanced & Responsive */}
       <TouchableOpacity
         activeOpacity={1}
         onPress={handleBoxPress}
@@ -122,6 +121,7 @@ export const OtpPinInput: React.FC<OtpPinInputProps> = ({
                 },
                 isFocused && {
                   borderWidth: 2,
+                  borderColor: colors.primary,
                   backgroundColor: isDark ? 'rgba(99, 102, 241, 0.12)' : 'rgba(99, 102, 241, 0.06)',
                   shadowColor: colors.primary,
                   shadowOffset: { width: 0, height: 0 },
@@ -132,17 +132,13 @@ export const OtpPinInput: React.FC<OtpPinInputProps> = ({
                 disabled && { opacity: 0.5 },
               ]}
             >
-              <Text
-                style={[
-                  styles.boxText,
-                  {
-                    color: colors.text,
-                  },
-                ]}
-              >
-                {char}
-              </Text>
-              {isFocused && <View style={[styles.cursor, { backgroundColor: colors.primary }]} />}
+              {char ? (
+                <Text style={[styles.boxText, { color: colors.text }]}>
+                  {char}
+                </Text>
+              ) : isFocused ? (
+                <View style={[styles.activeCaret, { backgroundColor: colors.primary }]} />
+              ) : null}
             </View>
           );
         })}
@@ -171,52 +167,57 @@ export const OtpPinInput: React.FC<OtpPinInputProps> = ({
 
 const styles = StyleSheet.create({
   wrapper: {
+    width: '100%',
     alignItems: 'center',
     marginVertical: Spacing.md,
   },
   hiddenInput: {
     position: 'absolute',
+    left: -9999,
     width: 1,
     height: 1,
     opacity: 0,
   },
   boxesContainer: {
+    width: '100%',
+    maxWidth: 320,
     flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 8,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    alignSelf: 'center',
   },
   box: {
-    width: 46,
+    flex: 1,
+    maxWidth: 44,
     height: 54,
-    borderRadius: Radius.lg,
+    borderRadius: 14,
     borderWidth: 1.5,
+    marginHorizontal: 3,
     alignItems: 'center',
     justifyContent: 'center',
-    position: 'relative',
   },
   boxText: {
     fontSize: 22,
     fontWeight: '800',
+    textAlign: 'center',
   },
-  cursor: {
-    position: 'absolute',
-    bottom: 10,
-    width: 16,
-    height: 2.5,
-    borderRadius: 1.5,
+  activeCaret: {
+    width: 2,
+    height: 22,
+    borderRadius: 1,
   },
   pasteBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
     borderRadius: Radius.full,
     borderWidth: 1,
     marginTop: Spacing.md,
   },
   pasteBtnText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
   },
 });
