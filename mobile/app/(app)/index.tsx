@@ -1,4 +1,4 @@
-﻿import React, { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { Platform, useWindowDimensions, ActivityIndicator,
   Image,
   RefreshControl,
@@ -537,7 +537,7 @@ export default function DashboardScreen() {
                 }}
               >
                 <Text style={[styles.seeAllText, { color: colors.primary }]}>
-                  See All ?
+                  See All →
                 </Text>
               </TouchableOpacity>
             </View>
@@ -579,7 +579,7 @@ export default function DashboardScreen() {
                     }}
                   >
                     <Text style={[styles.seeAllText, { color: colors.primary }]}>
-                      View All ?
+                      View All →
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -609,7 +609,7 @@ export default function DashboardScreen() {
                     }}
                   >
                     <Text style={[styles.seeAllText, { color: colors.primary }]}>
-                      Manage ?
+                      Manage →
                     </Text>
                   </TouchableOpacity>
                 </View>
