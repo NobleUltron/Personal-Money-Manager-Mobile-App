@@ -27,7 +27,7 @@ export default function AppLayout() {
   }, [user, isLoading]);
 
   if (isLoading || !user) {
-    return null;
+    return <View style={{ flex: 1, backgroundColor: colors.background }} />;
   }
 
   const LayoutWrapper = isDesktop ? View : React.Fragment;

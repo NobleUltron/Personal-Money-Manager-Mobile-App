@@ -1,17 +1,18 @@
-import React from 'react';
-import { LogBox } from 'react-native';
+import React, { useState } from 'react';
+import { LogBox, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider, useTheme } from '../context/ThemeContext';
-import { AuthProvider } from '../context/AuthContext';
+import { AuthProvider, useAuth } from '../context/AuthContext';
 import { PrivacyProvider } from '../context/PrivacyContext';
 import { QuickEntryProvider } from '../context/QuickEntryContext';
 import { BiometricsProvider } from '../context/BiometricsContext';
 import { NotificationsProvider } from '../context/NotificationsContext';
 import { SyncProvider } from '../context/SyncContext';
 import { OfflineBanner } from '../components/ui/OfflineBanner';
+import { AppSplashScreen } from '../components/ui/AppSplashScreen';
 
 // Ignore Expo Go remote push warning (since Personal Money Manager uses local notifications for bill reminders & budget alerts)
 LogBox.ignoreLogs([
@@ -30,16 +31,31 @@ const queryClient = new QueryClient({
 });
 
 function RootNavigation() {
-  const { isDark } = useTheme();
+  const { isDark, colors } = useTheme();
+  const { isLoading } = useAuth();
+  const [showSplash, setShowSplash] = useState(true);
 
   return (
-    <>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
-      <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          animation: 'fade',
+          contentStyle: { backgroundColor: colors.background },
+        }}
+      >
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="(app)" options={{ headerShown: false }} />
       </Stack>
-    </>
+
+      {showSplash && (
+        <AppSplashScreen
+          isReady={!isLoading}
+          onAnimationComplete={() => setShowSplash(false)}
+        />
+      )}
+    </View>
   );
 }
 
