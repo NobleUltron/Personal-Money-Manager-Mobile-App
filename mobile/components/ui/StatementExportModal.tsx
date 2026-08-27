@@ -11,7 +11,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Check,
-  Download,
   FileSpreadsheet,
   FileText,
   Printer,
@@ -208,6 +207,8 @@ export const StatementExportModal: React.FC<StatementExportModalProps> = ({
     }
   };
 
+  const isExcel = format === 'excel';
+
   return (
     <RNModal
       visible={visible}
@@ -219,8 +220,8 @@ export const StatementExportModal: React.FC<StatementExportModalProps> = ({
         {/* Fixed Header */}
         <View style={[styles.header, { backgroundColor: isDark ? '#0F172A' : '#FFFFFF', borderBottomColor: colors.borderSubtle }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <View style={[styles.iconCircle, { backgroundColor: format === 'excel' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(99, 102, 241, 0.15)' }]}>
-              {format === 'excel' ? (
+            <View style={[styles.iconCircle, { backgroundColor: isExcel ? 'rgba(16, 185, 129, 0.15)' : 'rgba(99, 102, 241, 0.15)' }]}>
+              {isExcel ? (
                 <FileSpreadsheet size={20} color="#10B981" />
               ) : (
                 <FileText size={20} color="#6366F1" />
@@ -229,7 +230,7 @@ export const StatementExportModal: React.FC<StatementExportModalProps> = ({
             <View>
               <Text style={[styles.title, { color: colors.text }]}>Export Statement</Text>
               <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-                {format === 'excel' ? 'Spreadsheet (.CSV) dataset' : 'Formatted A4 executive report'}
+                {isExcel ? 'Spreadsheet (.CSV) dataset' : 'Formatted A4 executive report'}
               </Text>
             </View>
           </View>
@@ -560,17 +561,18 @@ export const StatementExportModal: React.FC<StatementExportModalProps> = ({
             title={
               isExporting
                 ? 'Generating...'
-                : format === 'excel'
+                : isExcel
                 ? 'Export Excel (.CSV) Statement'
                 : 'Export PDF Statement'
             }
-            variant={format === 'excel' ? 'success' : 'primary'}
+            variant={isExcel ? 'success' : 'primary'}
             size="lg"
             loading={isExporting}
             onPress={handleExport}
-            style={{ flex: 1 }}
+            fullWidth={!format || format === 'excel'}
+            style={format === 'pdf' ? { flex: 1 } : undefined}
             icon={
-              format === 'excel' ? (
+              isExcel ? (
                 <FileSpreadsheet size={18} color="#FFFFFF" />
               ) : (
                 <Share2 size={18} color="#FFFFFF" />

@@ -110,6 +110,9 @@ export const Button: React.FC<ButtonProps> = ({
 
   const isGradient = (variant === 'primary' || variant === 'success' || Boolean(gradientColors)) && !disabled;
 
+  const flattenedStyle = (StyleSheet.flatten(style) || {}) as ViewStyle;
+  const hasFlex = flattenedStyle.flex !== undefined;
+
   const buttonStyle: StyleProp<ViewStyle> = [
     styles.base,
     {
@@ -119,8 +122,8 @@ export const Button: React.FC<ButtonProps> = ({
       borderColor: getBorderColor(),
       borderWidth: variant === 'outline' ? 1 : 0,
       borderRadius: Radius.full,
+      width: '100%',
     },
-    fullWidth ? { width: '100%' } : undefined,
     disabled ? { opacity: 0.6 } : undefined,
     style,
   ];
@@ -137,13 +140,17 @@ export const Button: React.FC<ButtonProps> = ({
 
   const activeGradient = gradientColors || (variant === 'success' ? ['#10B981', '#059669'] : (Gradients.primary as any));
 
+  const containerStyle: StyleProp<ViewStyle> = [
+    hasFlex ? { flex: flattenedStyle.flex } : (fullWidth ? { width: '100%' } : undefined),
+  ];
+
   return (
     <Pressable
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
       onPress={handlePress}
       disabled={disabled}
-      style={fullWidth ? { width: '100%' } : undefined}
+      style={containerStyle}
       {...props}
     >
       <Animated.View style={[buttonStyle, animatedStyle]}>
