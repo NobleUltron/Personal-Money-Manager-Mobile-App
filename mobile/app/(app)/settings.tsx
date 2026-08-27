@@ -74,24 +74,24 @@ import { triggerHaptic } from '../../utils/haptics';
 import { Gradients, Radius, Spacing, Typography } from '../../constants/theme';
 
 const CURRENCIES = [
-  { code: 'UGX', name: 'Ugandan Shilling', symbol: 'USh', flag: 'ðŸ‡ºðŸ‡¬' },
-  { code: 'USD', name: 'US Dollar', symbol: '$', flag: 'ðŸ‡ºðŸ‡¸' },
-  { code: 'EUR', name: 'Euro', symbol: 'â‚¬', flag: 'ðŸ‡ªðŸ‡º' },
-  { code: 'GBP', name: 'British Pound', symbol: 'Â£', flag: 'ðŸ‡¬ðŸ‡§' },
-  { code: 'KES', name: 'Kenyan Shilling', symbol: 'KSh', flag: 'ðŸ‡°ðŸ‡ª' },
-  { code: 'TZS', name: 'Tanzanian Shilling', symbol: 'TSh', flag: 'ðŸ‡¹ðŸ‡¿' },
-  { code: 'RWF', name: 'Rwandan Franc', symbol: 'FRw', flag: 'ðŸ‡·ðŸ‡¼' },
-  { code: 'NGN', name: 'Nigerian Naira', symbol: 'â‚¦', flag: 'ðŸ‡³ðŸ‡¬' },
-  { code: 'GHS', name: 'Ghanaian Cedi', symbol: 'GHâ‚µ', flag: 'ðŸ‡¬ðŸ‡­' },
-  { code: 'ZAR', name: 'South African Rand', symbol: 'R', flag: 'ðŸ‡¿ðŸ‡¦' },
-  { code: 'CAD', name: 'Canadian Dollar', symbol: 'CA$', flag: 'ðŸ‡¨ðŸ‡¦' },
-  { code: 'AUD', name: 'Australian Dollar', symbol: 'A$', flag: 'ðŸ‡¦ðŸ‡º' },
-  { code: 'INR', name: 'Indian Rupee', symbol: 'â‚¹', flag: 'ðŸ‡®ðŸ‡³' },
-  { code: 'AED', name: 'UAE Dirham', symbol: 'AED', flag: 'ðŸ‡¦ðŸ‡ª' },
-  { code: 'JPY', name: 'Japanese Yen', symbol: 'Â¥', flag: 'ðŸ‡¯ðŸ‡µ' },
-  { code: 'CNY', name: 'Chinese Yuan', symbol: 'Â¥', flag: 'ðŸ‡¨ðŸ‡³' },
-  { code: 'CHF', name: 'Swiss Franc', symbol: 'CHF', flag: 'ðŸ‡¨ðŸ‡­' },
-  { code: 'BRL', name: 'Brazilian Real', symbol: 'R$', flag: 'ðŸ‡§ðŸ‡·' },
+  { code: 'UGX', name: 'Ugandan Shilling', symbol: 'USh', flag: '🇺🇬' },
+  { code: 'USD', name: 'US Dollar', symbol: '$', flag: '🇺🇸' },
+  { code: 'EUR', name: 'Euro', symbol: '€', flag: '🇪🇺' },
+  { code: 'GBP', name: 'British Pound', symbol: '£', flag: '🇬🇧' },
+  { code: 'KES', name: 'Kenyan Shilling', symbol: 'KSh', flag: '🇰🇪' },
+  { code: 'TZS', name: 'Tanzanian Shilling', symbol: 'TSh', flag: '🇹🇿' },
+  { code: 'RWF', name: 'Rwandan Franc', symbol: 'FRw', flag: '🇷🇼' },
+  { code: 'NGN', name: 'Nigerian Naira', symbol: '₦', flag: '🇳🇬' },
+  { code: 'GHS', name: 'Ghanaian Cedi', symbol: 'GH₵', flag: '🇬🇭' },
+  { code: 'ZAR', name: 'South African Rand', symbol: 'R', flag: '🇿🇦' },
+  { code: 'CAD', name: 'Canadian Dollar', symbol: 'CA$', flag: '🇨🇦' },
+  { code: 'AUD', name: 'Australian Dollar', symbol: 'A$', flag: '🇦🇺' },
+  { code: 'INR', name: 'Indian Rupee', symbol: '₹', flag: '🇮🇳' },
+  { code: 'AED', name: 'UAE Dirham', symbol: 'AED', flag: '🇦🇪' },
+  { code: 'JPY', name: 'Japanese Yen', symbol: '¥', flag: '🇯🇵' },
+  { code: 'CNY', name: 'Chinese Yuan', symbol: '¥', flag: '🇨🇳' },
+  { code: 'CHF', name: 'Swiss Franc', symbol: 'CHF', flag: '🇨🇭' },
+  { code: 'BRL', name: 'Brazilian Real', symbol: 'R$', flag: '🇧🇷' },
 ];
 
 export default function SettingsScreen() {
@@ -500,7 +500,7 @@ export default function SettingsScreen() {
             </View>
 
             <Text style={[styles.currencyTag, { color: colors.primary, backgroundColor: isDark ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.1)' }]}>
-              {user?.currency || 'UGX'} â€¢ {user?.currency_symbol || 'USh'}
+              {user?.currency || 'UGX'} • {user?.currency_symbol || 'USh'}
             </Text>
           </View>
         </LinearGradient>
@@ -1088,7 +1088,7 @@ export default function SettingsScreen() {
         {/* 7. App Info Footer */}
         <View style={styles.appFooter}>
           <Text style={[styles.appVersionText, { color: colors.textMuted }]}>
-            Personal Money Manager â€¢ v1.0.0
+            Personal Money Manager • v1.0.0
           </Text>
           <Text style={[styles.appLegalText, { color: colors.textMuted }]}>
             Self-hosted & Local Encrypted Storage
