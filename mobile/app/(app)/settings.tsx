@@ -947,7 +947,7 @@ export default function SettingsScreen() {
             <View style={{ flex: 1 }}>
               <Text style={[styles.menuText, { color: colors.text }]}>Send Test Notification</Text>
               <Text style={[styles.menuSubtext, { color: testNotifSuccess ? '#10B981' : colors.textSecondary }]}>
-                {testNotifSuccess ? 'âœ“ Test banner sent successfully!' : 'Preview push notification appearance'}
+                {testNotifSuccess ? 'Test notification sent successfully!' : 'Preview push notification appearance'}
               </Text>
             </View>
             <ChevronRight size={18} color={colors.textMuted} />
