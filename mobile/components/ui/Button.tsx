@@ -8,7 +8,8 @@ import { Gradients, Radius, Spacing } from '../../constants/theme';
 
 interface ButtonProps extends Omit<PressableProps, 'style'> {
   title: string;
-  variant?: 'primary' | 'secondary' | 'outline' | 'danger' | 'ghost';
+  variant?: 'primary' | 'secondary' | 'outline' | 'danger' | 'ghost' | 'success';
+  gradientColors?: readonly string[] | string[];
   size?: 'sm' | 'md' | 'lg';
   loading?: boolean;
   icon?: React.ReactNode;
@@ -19,6 +20,7 @@ interface ButtonProps extends Omit<PressableProps, 'style'> {
 export const Button: React.FC<ButtonProps> = ({
   title,
   variant = 'primary',
+  gradientColors,
   size = 'md',
   loading = false,
   icon,
@@ -68,6 +70,7 @@ export const Button: React.FC<ButtonProps> = ({
     if (disabled) return colors.border;
     switch (variant) {
       case 'danger': return colors.danger;
+      case 'success': return '#10B981';
       case 'secondary': return colors.surfaceElevated;
       case 'outline':
       case 'ghost': return 'transparent';
@@ -105,12 +108,14 @@ export const Button: React.FC<ButtonProps> = ({
     </View>
   );
 
+  const isGradient = (variant === 'primary' || variant === 'success' || Boolean(gradientColors)) && !disabled;
+
   const buttonStyle: StyleProp<ViewStyle> = [
     styles.base,
     {
       height: getHeight(),
       paddingHorizontal: getPaddingHorizontal(),
-      backgroundColor: variant !== 'primary' ? getBackgroundColor() : 'transparent',
+      backgroundColor: !isGradient ? getBackgroundColor() : 'transparent',
       borderColor: getBorderColor(),
       borderWidth: variant === 'outline' ? 1 : 0,
       borderRadius: Radius.full,
@@ -130,6 +135,8 @@ export const Button: React.FC<ButtonProps> = ({
     scale.value = withSpring(1, { damping: 15, stiffness: 300 });
   };
 
+  const activeGradient = gradientColors || (variant === 'success' ? ['#10B981', '#059669'] : (Gradients.primary as any));
+
   return (
     <Pressable
       onPressIn={handlePressIn}
@@ -140,9 +147,9 @@ export const Button: React.FC<ButtonProps> = ({
       {...props}
     >
       <Animated.View style={[buttonStyle, animatedStyle]}>
-        {variant === 'primary' && !disabled ? (
+        {isGradient ? (
           <LinearGradient
-            colors={Gradients.primary as any}
+            colors={activeGradient}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={[StyleSheet.absoluteFill, { borderRadius: Radius.full }]}

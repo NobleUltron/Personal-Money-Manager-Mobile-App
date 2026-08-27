@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Check,
   Download,
@@ -56,7 +56,6 @@ export const StatementExportModal: React.FC<StatementExportModalProps> = ({
   transactions = [],
   accounts = [],
 }) => {
-  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const { colors, isDark } = useTheme();
 
@@ -210,389 +209,383 @@ export const StatementExportModal: React.FC<StatementExportModalProps> = ({
   };
 
   return (
-    <RNModal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={styles.overlay}>
-        <View
-          style={[
-            styles.modalCard,
-            {
-              backgroundColor: isDark ? '#0F172A' : '#FFFFFF',
-              borderColor: colors.border,
-            },
-          ]}
-        >
-          {/* Header */}
-          <View style={[styles.header, { borderBottomColor: colors.border }]}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <View style={[styles.iconCircle, { backgroundColor: 'rgba(99, 102, 241, 0.15)' }]}>
-                <Download size={20} color="#6366F1" />
-              </View>
-              <View>
-                <Text style={[styles.title, { color: colors.text }]}>Export Statement</Text>
-                <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-                  Generate financial PDF or Excel reports
-                </Text>
-              </View>
+    <RNModal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={onClose}
+    >
+      <SafeAreaView style={[styles.container, { backgroundColor: isDark ? '#0B1120' : '#F8FAFC' }]}>
+        {/* Fixed Header */}
+        <View style={[styles.header, { backgroundColor: isDark ? '#0F172A' : '#FFFFFF', borderBottomColor: colors.borderSubtle }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <View style={[styles.iconCircle, { backgroundColor: format === 'excel' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(99, 102, 241, 0.15)' }]}>
+              {format === 'excel' ? (
+                <FileSpreadsheet size={20} color="#10B981" />
+              ) : (
+                <FileText size={20} color="#6366F1" />
+              )}
             </View>
-            <TouchableOpacity
-              onPress={onClose}
-              style={[styles.closeBtn, { backgroundColor: colors.surfaceElevated }]}
-            >
-              <X size={16} color={colors.textSecondary} />
-            </TouchableOpacity>
+            <View>
+              <Text style={[styles.title, { color: colors.text }]}>Export Statement</Text>
+              <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+                {format === 'excel' ? 'Spreadsheet (.CSV) dataset' : 'Formatted A4 executive report'}
+              </Text>
+            </View>
           </View>
-
-          {/* Scrollable Content Body */}
-          <ScrollView
-            style={styles.scrollView}
-            contentContainerStyle={styles.scrollBody}
-            showsVerticalScrollIndicator={false}
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={onClose}
+            style={[styles.closeBtn, { backgroundColor: colors.surfaceElevated }]}
           >
-            {/* 1. Format Selection */}
-            <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>Statement Format</Text>
-            <View style={styles.formatRow}>
-              <TouchableOpacity
-                activeOpacity={0.8}
-                onPress={() => {
-                  triggerHaptic.selection();
-                  setFormat('pdf');
-                }}
-                style={[
-                  styles.formatCard,
-                  {
-                    backgroundColor: format === 'pdf' ? (isDark ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.12)') : colors.surfaceElevated,
-                    borderColor: format === 'pdf' ? colors.primary : colors.border,
-                  },
-                ]}
-              >
-                <FileText size={24} color={format === 'pdf' ? colors.primary : colors.textSecondary} />
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.formatTitle, { color: format === 'pdf' ? colors.primary : colors.text }]}>
-                    PDF Document
-                  </Text>
-                  <Text style={[styles.formatSub, { color: colors.textSecondary }]}>
-                    Formatted A4 statement with executive summary & tables
-                  </Text>
-                </View>
-                {format === 'pdf' && (
-                  <View style={[styles.checkDot, { backgroundColor: colors.primary }]}>
-                    <Check size={11} color="#FFFFFF" strokeWidth={3} />
-                  </View>
-                )}
-              </TouchableOpacity>
+            <X size={16} color={colors.textSecondary} />
+          </TouchableOpacity>
+        </View>
 
-              <TouchableOpacity
-                activeOpacity={0.8}
-                onPress={() => {
-                  triggerHaptic.selection();
-                  setFormat('excel');
-                }}
-                style={[
-                  styles.formatCard,
-                  {
-                    backgroundColor: format === 'excel' ? (isDark ? 'rgba(16, 185, 129, 0.2)' : 'rgba(16, 185, 129, 0.12)') : colors.surfaceElevated,
-                    borderColor: format === 'excel' ? '#10B981' : colors.border,
-                  },
-                ]}
-              >
-                <FileSpreadsheet size={24} color={format === 'excel' ? '#10B981' : colors.textSecondary} />
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.formatTitle, { color: format === 'excel' ? '#10B981' : colors.text }]}>
-                    Excel Spreadsheet
-                  </Text>
-                  <Text style={[styles.formatSub, { color: colors.textSecondary }]}>
-                    Compatible .CSV for Excel, Google Sheets, & Numbers
-                  </Text>
-                </View>
-                {format === 'excel' && (
-                  <View style={[styles.checkDot, { backgroundColor: '#10B981' }]}>
-                    <Check size={11} color="#FFFFFF" strokeWidth={3} />
-                  </View>
-                )}
-              </TouchableOpacity>
-            </View>
-
-            {/* 2. Date Range Presets */}
-            <Text style={[styles.sectionLabel, { color: colors.textSecondary, marginTop: Spacing.sm }]}>
-              Period / Date Range
-            </Text>
-            <View style={styles.chipsWrap}>
-              {[
-                { id: 'this_month', label: 'This Month' },
-                { id: 'last_month', label: 'Last Month' },
-                { id: 'last_30_days', label: 'Last 30 Days' },
-                { id: 'last_90_days', label: 'Last 90 Days' },
-                { id: 'this_year', label: 'This Year' },
-                { id: 'all_time', label: 'All Time' },
-              ].map((item) => {
-                const isSelected = dateRange === item.id;
-                return (
-                  <TouchableOpacity
-                    key={item.id}
-                    activeOpacity={0.7}
-                    onPress={() => {
-                      triggerHaptic.selection();
-                      setDateRange(item.id as DateRangePreset);
-                    }}
-                    style={[
-                      styles.chip,
-                      {
-                        backgroundColor: isSelected ? colors.primary : colors.surfaceElevated,
-                        borderColor: isSelected ? colors.primary : colors.border,
-                      },
-                    ]}
-                  >
-                    <Text style={[styles.chipText, { color: isSelected ? '#FFFFFF' : colors.text }]}>
-                      {item.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-
-            {/* 3. Transaction Type Scope */}
-            <Text style={[styles.sectionLabel, { color: colors.textSecondary, marginTop: Spacing.sm }]}>
-              Transaction Type
-            </Text>
-            <View style={styles.chipsWrap}>
-              {[
-                { id: 'all', label: 'All Transactions' },
-                { id: 'income', label: 'Income Only (+)' },
-                { id: 'expense', label: 'Expenses Only (-)' },
-              ].map((item) => {
-                const isSelected = typeFilter === item.id;
-                return (
-                  <TouchableOpacity
-                    key={item.id}
-                    activeOpacity={0.7}
-                    onPress={() => {
-                      triggerHaptic.selection();
-                      setTypeFilter(item.id as TypeFilter);
-                    }}
-                    style={[
-                      styles.chip,
-                      {
-                        backgroundColor: isSelected ? colors.primary : colors.surfaceElevated,
-                        borderColor: isSelected ? colors.primary : colors.border,
-                      },
-                    ]}
-                  >
-                    <Text style={[styles.chipText, { color: isSelected ? '#FFFFFF' : colors.text }]}>
-                      {item.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-
-            {/* 4. Account Scope Filter */}
-            {accounts.length > 1 && (
-              <>
-                <Text style={[styles.sectionLabel, { color: colors.textSecondary, marginTop: Spacing.sm }]}>
-                  Account Filter
-                </Text>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={{ gap: 8, paddingRight: Spacing.lg }}
-                >
-                  <TouchableOpacity
-                    activeOpacity={0.7}
-                    onPress={() => {
-                      triggerHaptic.selection();
-                      setSelectedAccountId('all');
-                    }}
-                    style={[
-                      styles.chip,
-                      {
-                        backgroundColor: selectedAccountId === 'all' ? colors.primary : colors.surfaceElevated,
-                        borderColor: selectedAccountId === 'all' ? colors.primary : colors.border,
-                      },
-                    ]}
-                  >
-                    <Text style={[styles.chipText, { color: selectedAccountId === 'all' ? '#FFFFFF' : colors.text }]}>
-                      All Accounts ({accounts.length})
-                    </Text>
-                  </TouchableOpacity>
-
-                  {accounts.map((acc) => {
-                    const isSelected = selectedAccountId === acc.id;
-                    return (
-                      <TouchableOpacity
-                        key={acc.id}
-                        activeOpacity={0.7}
-                        onPress={() => {
-                          triggerHaptic.selection();
-                          setSelectedAccountId(acc.id);
-                        }}
-                        style={[
-                          styles.chip,
-                          {
-                            backgroundColor: isSelected ? colors.primary : colors.surfaceElevated,
-                            borderColor: isSelected ? colors.primary : colors.border,
-                          },
-                        ]}
-                      >
-                        <Text style={[styles.chipText, { color: isSelected ? '#FFFFFF' : colors.text }]}>
-                          {acc.name}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </ScrollView>
-              </>
-            )}
-
-            {/* 5. Redesigned Live Summary Preview Card */}
-            <View
+        {/* Scrollable Configuration Body */}
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollBody}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* 1. Format Selection */}
+          <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>Statement Format</Text>
+          <View style={styles.formatRow}>
+            {/* PDF Option */}
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => {
+                triggerHaptic.selection();
+                setFormat('pdf');
+              }}
               style={[
-                styles.previewBox,
+                styles.formatCard,
                 {
-                  backgroundColor: isDark ? 'rgba(30, 41, 59, 0.6)' : '#F8FAFC',
-                  borderColor: colors.border,
+                  backgroundColor: format === 'pdf' ? (isDark ? 'rgba(99, 102, 241, 0.18)' : 'rgba(99, 102, 241, 0.1)') : (isDark ? '#1E293B' : '#FFFFFF'),
+                  borderColor: format === 'pdf' ? colors.primary : colors.border,
                 },
               ]}
             >
-              <View style={styles.previewHeaderRow}>
-                <Text style={[styles.previewHeading, { color: colors.textSecondary }]}>
-                  Report Contents Preview
-                </Text>
-                <View style={[styles.previewCountBadge, { backgroundColor: isDark ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.1)' }]}>
-                  <Text style={[styles.previewCountText, { color: colors.primary }]}>
-                    {summary.transactionCount} Transactions
-                  </Text>
-                </View>
+              <View style={[styles.formatIconCircle, { backgroundColor: 'rgba(99, 102, 241, 0.15)' }]}>
+                <FileText size={22} color="#6366F1" />
               </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.formatTitle, { color: format === 'pdf' ? colors.primary : colors.text }]}>
+                  PDF Document
+                </Text>
+                <Text style={[styles.formatSub, { color: colors.textSecondary }]}>
+                  Formatted A4 statement with executive summary & tables
+                </Text>
+              </View>
+              {format === 'pdf' && (
+                <View style={[styles.checkDot, { backgroundColor: colors.primary }]}>
+                  <Check size={11} color="#FFFFFF" strokeWidth={3} />
+                </View>
+              )}
+            </TouchableOpacity>
 
-              <View style={styles.previewCardsGrid}>
-                {/* Total Inflow Card */}
-                <View
+            {/* Excel Option */}
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => {
+                triggerHaptic.selection();
+                setFormat('excel');
+              }}
+              style={[
+                styles.formatCard,
+                {
+                  backgroundColor: format === 'excel' ? (isDark ? 'rgba(16, 185, 129, 0.18)' : 'rgba(16, 185, 129, 0.1)') : (isDark ? '#1E293B' : '#FFFFFF'),
+                  borderColor: format === 'excel' ? '#10B981' : colors.border,
+                },
+              ]}
+            >
+              <View style={[styles.formatIconCircle, { backgroundColor: 'rgba(16, 185, 129, 0.15)' }]}>
+                <FileSpreadsheet size={22} color="#10B981" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.formatTitle, { color: format === 'excel' ? '#10B981' : colors.text }]}>
+                  Excel Spreadsheet
+                </Text>
+                <Text style={[styles.formatSub, { color: colors.textSecondary }]}>
+                  Compatible .CSV for Excel, Google Sheets, & Numbers
+                </Text>
+              </View>
+              {format === 'excel' && (
+                <View style={[styles.checkDot, { backgroundColor: '#10B981' }]}>
+                  <Check size={11} color="#FFFFFF" strokeWidth={3} />
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          {/* 2. Date Range Presets */}
+          <Text style={[styles.sectionLabel, { color: colors.textSecondary, marginTop: Spacing.sm }]}>
+            Period / Date Range
+          </Text>
+          <View style={styles.chipsWrap}>
+            {[
+              { id: 'this_month', label: 'This Month' },
+              { id: 'last_month', label: 'Last Month' },
+              { id: 'last_30_days', label: 'Last 30 Days' },
+              { id: 'last_90_days', label: 'Last 90 Days' },
+              { id: 'this_year', label: 'This Year' },
+              { id: 'all_time', label: 'All Time' },
+            ].map((item) => {
+              const isSelected = dateRange === item.id;
+              return (
+                <TouchableOpacity
+                  key={item.id}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    triggerHaptic.selection();
+                    setDateRange(item.id as DateRangePreset);
+                  }}
                   style={[
-                    styles.previewMiniCard,
+                    styles.chip,
                     {
-                      backgroundColor: isDark ? 'rgba(16, 185, 129, 0.12)' : '#ECFDF5',
-                      borderColor: isDark ? 'rgba(16, 185, 129, 0.25)' : '#A7F3D0',
+                      backgroundColor: isSelected ? colors.primary : (isDark ? '#1E293B' : '#FFFFFF'),
+                      borderColor: isSelected ? colors.primary : colors.border,
                     },
                   ]}
                 >
-                  <View style={styles.miniLabelRow}>
-                    <TrendingUp size={13} color="#10B981" />
-                    <Text style={[styles.previewMiniLabel, { color: '#10B981' }]}>Total Inflows</Text>
-                  </View>
-                  <Text
-                    numberOfLines={1}
-                    adjustsFontSizeToFit
-                    style={[styles.previewMiniVal, { color: '#10B981' }]}
-                  >
-                    +{user?.currency_symbol || 'UGX'} {summary.totalIncome.toLocaleString()}
+                  <Text style={[styles.chipText, { color: isSelected ? '#FFFFFF' : colors.text }]}>
+                    {item.label}
                   </Text>
-                </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
 
-                {/* Total Outflow Card */}
-                <View
+          {/* 3. Transaction Type Scope */}
+          <Text style={[styles.sectionLabel, { color: colors.textSecondary, marginTop: Spacing.sm }]}>
+            Transaction Type
+          </Text>
+          <View style={styles.chipsWrap}>
+            {[
+              { id: 'all', label: 'All Transactions' },
+              { id: 'income', label: 'Income Only (+)' },
+              { id: 'expense', label: 'Expenses Only (-)' },
+            ].map((item) => {
+              const isSelected = typeFilter === item.id;
+              return (
+                <TouchableOpacity
+                  key={item.id}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    triggerHaptic.selection();
+                    setTypeFilter(item.id as TypeFilter);
+                  }}
                   style={[
-                    styles.previewMiniCard,
+                    styles.chip,
                     {
-                      backgroundColor: isDark ? 'rgba(239, 68, 68, 0.12)' : '#FEF2F2',
-                      borderColor: isDark ? 'rgba(239, 68, 68, 0.25)' : '#FECACA',
+                      backgroundColor: isSelected ? colors.primary : (isDark ? '#1E293B' : '#FFFFFF'),
+                      borderColor: isSelected ? colors.primary : colors.border,
                     },
                   ]}
                 >
-                  <View style={styles.miniLabelRow}>
-                    <TrendingDown size={13} color="#EF4444" />
-                    <Text style={[styles.previewMiniLabel, { color: '#EF4444' }]}>Total Outflows</Text>
-                  </View>
-                  <Text
-                    numberOfLines={1}
-                    adjustsFontSizeToFit
-                    style={[styles.previewMiniVal, { color: '#EF4444' }]}
-                  >
-                    -{user?.currency_symbol || 'UGX'} {summary.totalExpense.toLocaleString()}
+                  <Text style={[styles.chipText, { color: isSelected ? '#FFFFFF' : colors.text }]}>
+                    {item.label}
                   </Text>
-                </View>
-              </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
 
-              {/* Net Cash Flow Row */}
-              <View style={[styles.previewNetRow, { borderTopColor: colors.borderSubtle }]}>
-                <Text style={[styles.previewNetLabel, { color: colors.textSecondary }]}>Net Cash Flow:</Text>
-                <Text
+          {/* 4. Account Scope Filter */}
+          {accounts.length > 1 && (
+            <>
+              <Text style={[styles.sectionLabel, { color: colors.textSecondary, marginTop: Spacing.sm }]}>
+                Account Filter
+              </Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ gap: 8, paddingRight: Spacing.lg }}
+              >
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    triggerHaptic.selection();
+                    setSelectedAccountId('all');
+                  }}
                   style={[
-                    styles.previewNetVal,
-                    { color: summary.netSavings >= 0 ? '#10B981' : '#EF4444' },
+                    styles.chip,
+                    {
+                      backgroundColor: selectedAccountId === 'all' ? colors.primary : (isDark ? '#1E293B' : '#FFFFFF'),
+                      borderColor: selectedAccountId === 'all' ? colors.primary : colors.border,
+                    },
                   ]}
                 >
-                  {summary.netSavings >= 0 ? '↗ +' : '↘ -'}{user?.currency_symbol || 'UGX'} {Math.abs(summary.netSavings).toLocaleString()}
-                </Text>
-              </View>
-            </View>
-          </ScrollView>
+                  <Text style={[styles.chipText, { color: selectedAccountId === 'all' ? '#FFFFFF' : colors.text }]}>
+                    All Accounts ({accounts.length})
+                  </Text>
+                </TouchableOpacity>
 
-          {/* Sticky Action Footer (Always Visible) */}
+                {accounts.map((acc) => {
+                  const isSelected = selectedAccountId === acc.id;
+                  return (
+                    <TouchableOpacity
+                      key={acc.id}
+                      activeOpacity={0.7}
+                      onPress={() => {
+                        triggerHaptic.selection();
+                        setSelectedAccountId(acc.id);
+                      }}
+                      style={[
+                        styles.chip,
+                        {
+                          backgroundColor: isSelected ? colors.primary : (isDark ? '#1E293B' : '#FFFFFF'),
+                          borderColor: isSelected ? colors.primary : colors.border,
+                        },
+                      ]}
+                    >
+                      <Text style={[styles.chipText, { color: isSelected ? '#FFFFFF' : colors.text }]}>
+                        {acc.name}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </>
+          )}
+
+          {/* 5. Live Summary Preview Box */}
           <View
             style={[
-              styles.footer,
+              styles.previewBox,
               {
-                borderTopColor: colors.border,
-                paddingBottom: Math.max(insets.bottom, Spacing.md),
+                backgroundColor: isDark ? '#111C30' : '#F1F5F9',
+                borderColor: colors.borderSubtle,
               },
             ]}
           >
-            {format === 'pdf' && (
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={handlePrintPreview}
+            <View style={styles.previewHeaderRow}>
+              <Text style={[styles.previewHeading, { color: colors.textSecondary }]}>
+                Report Contents Preview
+              </Text>
+              <View style={[styles.previewCountBadge, { backgroundColor: isDark ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.1)' }]}>
+                <Text style={[styles.previewCountText, { color: colors.primary }]}>
+                  {summary.transactionCount} Transactions
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.previewCardsGrid}>
+              {/* Total Inflow Card */}
+              <View
                 style={[
-                  styles.previewBtn,
-                  { backgroundColor: colors.surfaceElevated, borderColor: colors.border },
+                  styles.previewMiniCard,
+                  {
+                    backgroundColor: isDark ? 'rgba(16, 185, 129, 0.12)' : '#ECFDF5',
+                    borderColor: isDark ? 'rgba(16, 185, 129, 0.25)' : '#A7F3D0',
+                  },
                 ]}
               >
-                <Printer size={18} color={colors.text} />
-              </TouchableOpacity>
-            )}
+                <View style={styles.miniLabelRow}>
+                  <TrendingUp size={13} color="#10B981" />
+                  <Text style={[styles.previewMiniLabel, { color: '#10B981' }]}>Total Inflows</Text>
+                </View>
+                <Text
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  style={[styles.previewMiniVal, { color: '#10B981' }]}
+                >
+                  +{user?.currency_symbol || 'UGX'} {summary.totalIncome.toLocaleString()}
+                </Text>
+              </View>
 
-            <Button
-              title={
-                isExporting
-                  ? 'Generating...'
-                  : format === 'excel'
-                  ? 'Export Excel (.CSV) Statement'
-                  : 'Export PDF Statement'
-              }
-              size="lg"
-              loading={isExporting}
-              onPress={handleExport}
-              style={{
-                flex: 1,
-                backgroundColor: format === 'excel' ? '#10B981' : undefined,
-              }}
-              icon={
-                format === 'excel' ? (
-                  <FileSpreadsheet size={18} color="#FFFFFF" />
-                ) : (
-                  <Share2 size={18} color="#FFFFFF" />
-                )
-              }
-            />
+              {/* Total Outflow Card */}
+              <View
+                style={[
+                  styles.previewMiniCard,
+                  {
+                    backgroundColor: isDark ? 'rgba(239, 68, 68, 0.12)' : '#FEF2F2',
+                    borderColor: isDark ? 'rgba(239, 68, 68, 0.25)' : '#FECACA',
+                  },
+                ]}
+              >
+                <View style={styles.miniLabelRow}>
+                  <TrendingDown size={13} color="#EF4444" />
+                  <Text style={[styles.previewMiniLabel, { color: '#EF4444' }]}>Total Outflows</Text>
+                </View>
+                <Text
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  style={[styles.previewMiniVal, { color: '#EF4444' }]}
+                >
+                  -{user?.currency_symbol || 'UGX'} {summary.totalExpense.toLocaleString()}
+                </Text>
+              </View>
+            </View>
+
+            {/* Net Cash Flow Row */}
+            <View style={[styles.previewNetRow, { borderTopColor: colors.borderSubtle }]}>
+              <Text style={[styles.previewNetLabel, { color: colors.textSecondary }]}>Net Cash Flow:</Text>
+              <Text
+                style={[
+                  styles.previewNetVal,
+                  { color: summary.netSavings >= 0 ? '#10B981' : '#EF4444' },
+                ]}
+              >
+                {summary.netSavings >= 0 ? '↗ +' : '↘ -'}{user?.currency_symbol || 'UGX'} {Math.abs(summary.netSavings).toLocaleString()}
+              </Text>
+            </View>
           </View>
+        </ScrollView>
+
+        {/* Fixed Sticky Action Footer */}
+        <View
+          style={[
+            styles.footer,
+            {
+              backgroundColor: isDark ? '#0F172A' : '#FFFFFF',
+              borderTopColor: colors.borderSubtle,
+            },
+          ]}
+        >
+          {format === 'pdf' && (
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={handlePrintPreview}
+              style={[
+                styles.previewBtn,
+                { backgroundColor: colors.surfaceElevated, borderColor: colors.border },
+              ]}
+            >
+              <Printer size={18} color={colors.text} />
+            </TouchableOpacity>
+          )}
+
+          <Button
+            title={
+              isExporting
+                ? 'Generating...'
+                : format === 'excel'
+                ? 'Export Excel (.CSV) Statement'
+                : 'Export PDF Statement'
+            }
+            variant={format === 'excel' ? 'success' : 'primary'}
+            size="lg"
+            loading={isExporting}
+            onPress={handleExport}
+            style={{ flex: 1 }}
+            icon={
+              format === 'excel' ? (
+                <FileSpreadsheet size={18} color="#FFFFFF" />
+              ) : (
+                <Share2 size={18} color="#FFFFFF" />
+              )
+            }
+          />
         </View>
-      </View>
+      </SafeAreaView>
     </RNModal>
   );
 };
 
 const styles = StyleSheet.create({
-  overlay: {
+  container: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.65)',
-    justifyContent: 'flex-end',
-  },
-  modalCard: {
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    borderWidth: 1,
-    height: '88%',
-    display: 'flex',
-    flexDirection: 'column',
   },
   header: {
     flexDirection: 'row',
@@ -630,7 +623,7 @@ const styles = StyleSheet.create({
   scrollBody: {
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.md,
-    paddingBottom: Spacing.lg,
+    paddingBottom: Spacing.xl,
     gap: Spacing.xs,
   },
   sectionLabel: {
@@ -650,6 +643,13 @@ const styles = StyleSheet.create({
     borderRadius: Radius.lg,
     borderWidth: 1.5,
     gap: Spacing.md,
+  },
+  formatIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   formatTitle: {
     fontSize: 15,
@@ -752,7 +752,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.md,
+    paddingVertical: Spacing.md,
     gap: Spacing.sm,
     borderTopWidth: 1,
   },
