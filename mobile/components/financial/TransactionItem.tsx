@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import {
   ArrowDownLeft,
@@ -17,7 +17,6 @@ import {
   Dumbbell,
   ArrowLeftRight,
   PiggyBank,
-  CreditCard,
 } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { usePrivacy } from '../../context/PrivacyContext';
@@ -68,60 +67,45 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
     if (textToScan.includes('laptop') || textToScan.includes('macbook') || textToScan.includes('computer')) {
       return { icon: <Laptop size={18} color="#6366F1" />, bg: 'rgba(99, 102, 241, 0.15)', tag: 'Tech' };
     }
-    if (textToScan.includes('borrow') || textToScan.includes('loan from') || textToScan.includes('borrowed')) {
-      return { icon: <CreditCard size={18} color="#D946EF" />, bg: 'rgba(217, 70, 239, 0.15)', tag: 'Loan / Borrowed' };
-    }
-    if (textToScan.includes('loan to') || textToScan.includes('lent') || textToScan.includes('lend')) {
-      return { icon: <HandCoins size={18} color="#84CC16" />, bg: 'rgba(132, 204, 22, 0.15)', tag: 'Loan / Lent' };
-    }
-    if (textToScan.includes('loan') || textToScan.includes('debt')) {
+    if (textToScan.includes('loan') || textToScan.includes('borrow') || textToScan.includes('lend') || textToScan.includes('debt')) {
       return { icon: <HandCoins size={18} color="#F59E0B" />, bg: 'rgba(245, 158, 11, 0.15)', tag: 'Loan' };
     }
-    if (textToScan.includes('food') || textToScan.includes('dining') || textToScan.includes('restaurant') || textToScan.includes('cafe') || textToScan.includes('lunch') || textToScan.includes('dinner') || textToScan.includes('compensate')) {
-      return { icon: <Utensils size={18} color="#EF4444" />, bg: 'rgba(239, 68, 68, 0.15)', tag: 'Food & Dining' };
+    if (textToScan.includes('food') || textToScan.includes('dining') || textToScan.includes('restaurant') || textToScan.includes('cafe') || textToScan.includes('lunch') || textToScan.includes('dinner')) {
+      return { icon: <Utensils size={18} color="#EF4444" />, bg: 'rgba(239, 68, 68, 0.15)', tag: 'Food' };
     }
     if (textToScan.includes('car') || textToScan.includes('transport') || textToScan.includes('uber') || textToScan.includes('boda') || textToScan.includes('fuel')) {
-      return { icon: <Car size={18} color="#3B82F6" />, bg: 'rgba(59, 130, 246, 0.15)', tag: 'Transportation' };
+      return { icon: <Car size={18} color="#3B82F6" />, bg: 'rgba(59, 130, 246, 0.15)', tag: 'Transport' };
     }
     if (textToScan.includes('rent') || textToScan.includes('housing') || textToScan.includes('home')) {
-      return { icon: <Home size={18} color="#6366F1" />, bg: 'rgba(99, 102, 241, 0.15)', tag: 'Housing & Rent' };
+      return { icon: <Home size={18} color="#6366F1" />, bg: 'rgba(99, 102, 241, 0.15)', tag: 'Housing' };
     }
     if (textToScan.includes('umeme') || textToScan.includes('power') || textToScan.includes('water') || textToScan.includes('wifi') || textToScan.includes('utility') || textToScan.includes('bill')) {
-      return { icon: <Zap size={18} color="#EAB308" />, bg: 'rgba(234, 179, 8, 0.15)', tag: 'Utilities' };
+      return { icon: <Zap size={18} color="#EAB308" />, bg: 'rgba(234, 179, 8, 0.15)', tag: 'Bills' };
     }
     if (textToScan.includes('shopping') || textToScan.includes('clothes') || textToScan.includes('shoes') || textToScan.includes('market')) {
       return { icon: <ShoppingBag size={18} color="#EC4899" />, bg: 'rgba(236, 72, 153, 0.15)', tag: 'Shopping' };
     }
-    if (textToScan.includes('salary') || textToScan.includes('wage') || textToScan.includes('payroll')) {
-      return { icon: <Briefcase size={18} color="#10B981" />, bg: 'rgba(16, 185, 129, 0.15)', tag: 'Salary & Wages' };
-    }
-    if (textToScan.includes('business') || textToScan.includes('sales') || textToScan.includes('client payment') || textToScan.includes('payment')) {
-      return { icon: <Briefcase size={18} color="#14B8A6" />, bg: 'rgba(20, 184, 166, 0.15)', tag: 'Business Income' };
+    if (textToScan.includes('salary') || textToScan.includes('business') || textToScan.includes('wage') || textToScan.includes('income')) {
+      return { icon: <Briefcase size={18} color="#10B981" />, bg: 'rgba(16, 185, 129, 0.15)', tag: 'Income' };
     }
     if (textToScan.includes('savings') || textToScan.includes('deposit')) {
-      return { icon: <PiggyBank size={18} color="#10B981" />, bg: 'rgba(16, 185, 129, 0.15)', tag: 'Deposit' };
+      return { icon: <PiggyBank size={18} color="#10B981" />, bg: 'rgba(16, 185, 129, 0.15)', tag: 'Savings' };
     }
     if (textToScan.includes('transfer')) {
-      return { icon: <ArrowLeftRight size={18} color="#06B6D4" />, bg: 'rgba(6, 182, 212, 0.15)', tag: 'Transfer' };
+      return { icon: <ArrowLeftRight size={18} color="#6366F1" />, bg: 'rgba(99, 102, 241, 0.15)', tag: 'Transfer' };
     }
 
     // Default Fallback
     return {
       icon: isDeposit ? <ArrowDownLeft size={18} color={colors.success} /> : <ArrowUpRight size={18} color={colors.danger} />,
       bg: isDeposit ? colors.successLight : colors.dangerLight,
-      tag: isDeposit ? 'Income' : 'Expense',
+      tag: isDeposit ? 'Credit' : 'Debit',
     };
   };
 
   const itemMeta = getSmartIcon();
-
-  // Determine display category name
-  const rawCategory =
-    transaction.category && transaction.category.trim().length > 0 && transaction.category.toLowerCase() !== 'other'
-      ? transaction.category.trim()
-      : itemMeta.tag;
-
-  const catConfig = getCategoryConfig(rawCategory);
+  const catConfig = getCategoryConfig(transaction.category);
+  const displayTag = isDeposit ? 'Income' : (transaction.category || itemMeta.tag);
 
   return (
     <TouchableOpacity
@@ -136,8 +120,8 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
       ]}
     >
       {/* Visual Category / Merchant Icon */}
-      {transaction.category && transaction.category.toLowerCase() !== 'other' && transaction.category.toLowerCase() !== 'income' ? (
-        <CategoryIcon categoryName={transaction.category} size={42} iconSize={19} />
+      {transaction.category ? (
+        <CategoryIcon categoryName={transaction.category} size={36} iconSize={17} />
       ) : (
         <View style={[styles.iconBox, { backgroundColor: itemMeta.bg }]}>
           {itemMeta.icon}
@@ -154,24 +138,24 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
         </Text>
       </View>
 
-      {/* Right Column: Category Tag Pill + Signed Amount */}
+      {/* Right Column: Category Tag Pill + Amount */}
       <View style={styles.amountContainer}>
         <View
           style={[
             styles.typePill,
             {
-              backgroundColor: catConfig.bgColor,
+              backgroundColor: isDeposit ? 'rgba(16, 185, 129, 0.15)' : catConfig.bgColor,
             },
           ]}
         >
           <Text
             style={[
               styles.typePillText,
-              { color: catConfig.color },
+              { color: isDeposit ? '#10B981' : catConfig.color },
             ]}
             numberOfLines={1}
           >
-            {rawCategory}
+            {displayTag}
           </Text>
         </View>
 
