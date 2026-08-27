@@ -1087,6 +1087,11 @@ export default function SettingsScreen() {
 
         {/* 7. App Info Footer */}
         <View style={styles.appFooter}>
+          <Image
+            source={require('../../assets/images/icon.png')}
+            style={styles.appIconPreview}
+            resizeMode="cover"
+          />
           <Text style={[styles.appVersionText, { color: colors.textMuted }]}>
             Personal Money Manager • v1.0.0
           </Text>
@@ -1663,15 +1668,29 @@ const styles = StyleSheet.create({
   },
   appFooter: {
     alignItems: 'center',
-    marginTop: Spacing.lg,
-    gap: 2,
+    marginTop: Spacing.xl,
+    marginBottom: Spacing.xl,
+    gap: 4,
+  },
+  appIconPreview: {
+    width: 60,
+    height: 60,
+    borderRadius: 18,
+    marginBottom: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.12)',
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 8,
   },
   appVersionText: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
   },
   appLegalText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '500',
   },
   errorBox: {
