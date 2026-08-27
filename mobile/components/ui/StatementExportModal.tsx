@@ -8,15 +8,14 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Check,
-  ChevronDown,
   Download,
   FileSpreadsheet,
   FileText,
   Printer,
   Share2,
-  Sliders,
   TrendingDown,
   TrendingUp,
   X,
@@ -57,6 +56,7 @@ export const StatementExportModal: React.FC<StatementExportModalProps> = ({
   transactions = [],
   accounts = [],
 }) => {
+  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const { colors, isDark } = useTheme();
 
@@ -242,7 +242,12 @@ export const StatementExportModal: React.FC<StatementExportModalProps> = ({
             </TouchableOpacity>
           </View>
 
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollBody}>
+          {/* Scrollable Content Body */}
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollBody}
+            showsVerticalScrollIndicator={false}
+          >
             {/* 1. Format Selection */}
             <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>Statement Format</Text>
             <View style={styles.formatRow}>
@@ -255,7 +260,7 @@ export const StatementExportModal: React.FC<StatementExportModalProps> = ({
                 style={[
                   styles.formatCard,
                   {
-                    backgroundColor: format === 'pdf' ? 'rgba(99, 102, 241, 0.15)' : colors.surfaceElevated,
+                    backgroundColor: format === 'pdf' ? (isDark ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.12)') : colors.surfaceElevated,
                     borderColor: format === 'pdf' ? colors.primary : colors.border,
                   },
                 ]}
@@ -285,7 +290,7 @@ export const StatementExportModal: React.FC<StatementExportModalProps> = ({
                 style={[
                   styles.formatCard,
                   {
-                    backgroundColor: format === 'excel' ? 'rgba(16, 185, 129, 0.15)' : colors.surfaceElevated,
+                    backgroundColor: format === 'excel' ? (isDark ? 'rgba(16, 185, 129, 0.2)' : 'rgba(16, 185, 129, 0.12)') : colors.surfaceElevated,
                     borderColor: format === 'excel' ? '#10B981' : colors.border,
                   },
                 ]}
@@ -308,7 +313,7 @@ export const StatementExportModal: React.FC<StatementExportModalProps> = ({
             </View>
 
             {/* 2. Date Range Presets */}
-            <Text style={[styles.sectionLabel, { color: colors.textSecondary, marginTop: Spacing.md }]}>
+            <Text style={[styles.sectionLabel, { color: colors.textSecondary, marginTop: Spacing.sm }]}>
               Period / Date Range
             </Text>
             <View style={styles.chipsWrap}>
@@ -346,7 +351,7 @@ export const StatementExportModal: React.FC<StatementExportModalProps> = ({
             </View>
 
             {/* 3. Transaction Type Scope */}
-            <Text style={[styles.sectionLabel, { color: colors.textSecondary, marginTop: Spacing.md }]}>
+            <Text style={[styles.sectionLabel, { color: colors.textSecondary, marginTop: Spacing.sm }]}>
               Transaction Type
             </Text>
             <View style={styles.chipsWrap}>
@@ -383,13 +388,13 @@ export const StatementExportModal: React.FC<StatementExportModalProps> = ({
             {/* 4. Account Scope Filter */}
             {accounts.length > 1 && (
               <>
-                <Text style={[styles.sectionLabel, { color: colors.textSecondary, marginTop: Spacing.md }]}>
+                <Text style={[styles.sectionLabel, { color: colors.textSecondary, marginTop: Spacing.sm }]}>
                   Account Filter
                 </Text>
                 <ScrollView
                   horizontal
                   showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={{ gap: 8, paddingRight: Spacing.md }}
+                  contentContainerStyle={{ gap: 8, paddingRight: Spacing.lg }}
                 >
                   <TouchableOpacity
                     activeOpacity={0.7}
@@ -438,61 +443,135 @@ export const StatementExportModal: React.FC<StatementExportModalProps> = ({
               </>
             )}
 
-            {/* 5. Live Summary Card Preview */}
+            {/* 5. Redesigned Live Summary Preview Card */}
             <View
               style={[
                 styles.previewBox,
                 {
-                  backgroundColor: isDark ? 'rgba(30, 41, 59, 0.5)' : '#F8FAFC',
+                  backgroundColor: isDark ? 'rgba(30, 41, 59, 0.6)' : '#F8FAFC',
                   borderColor: colors.border,
                 },
               ]}
             >
-              <Text style={[styles.previewHeading, { color: colors.textSecondary }]}>
-                Report Contents Preview
-              </Text>
-              <View style={styles.previewGrid}>
-                <View style={styles.previewStat}>
-                  <Text style={[styles.previewStatVal, { color: colors.text }]}>
-                    {summary.transactionCount}
+              <View style={styles.previewHeaderRow}>
+                <Text style={[styles.previewHeading, { color: colors.textSecondary }]}>
+                  Report Contents Preview
+                </Text>
+                <View style={[styles.previewCountBadge, { backgroundColor: isDark ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.1)' }]}>
+                  <Text style={[styles.previewCountText, { color: colors.primary }]}>
+                    {summary.transactionCount} Transactions
                   </Text>
-                  <Text style={[styles.previewStatLabel, { color: colors.textMuted }]}>Transactions</Text>
                 </View>
-                <View style={styles.previewStat}>
-                  <Text style={[styles.previewStatVal, { color: '#10B981' }]}>
+              </View>
+
+              <View style={styles.previewCardsGrid}>
+                {/* Total Inflow Card */}
+                <View
+                  style={[
+                    styles.previewMiniCard,
+                    {
+                      backgroundColor: isDark ? 'rgba(16, 185, 129, 0.12)' : '#ECFDF5',
+                      borderColor: isDark ? 'rgba(16, 185, 129, 0.25)' : '#A7F3D0',
+                    },
+                  ]}
+                >
+                  <View style={styles.miniLabelRow}>
+                    <TrendingUp size={13} color="#10B981" />
+                    <Text style={[styles.previewMiniLabel, { color: '#10B981' }]}>Total Inflows</Text>
+                  </View>
+                  <Text
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    style={[styles.previewMiniVal, { color: '#10B981' }]}
+                  >
                     +{user?.currency_symbol || 'UGX'} {summary.totalIncome.toLocaleString()}
                   </Text>
-                  <Text style={[styles.previewStatLabel, { color: colors.textMuted }]}>Total Income</Text>
                 </View>
-                <View style={styles.previewStat}>
-                  <Text style={[styles.previewStatVal, { color: '#EF4444' }]}>
+
+                {/* Total Outflow Card */}
+                <View
+                  style={[
+                    styles.previewMiniCard,
+                    {
+                      backgroundColor: isDark ? 'rgba(239, 68, 68, 0.12)' : '#FEF2F2',
+                      borderColor: isDark ? 'rgba(239, 68, 68, 0.25)' : '#FECACA',
+                    },
+                  ]}
+                >
+                  <View style={styles.miniLabelRow}>
+                    <TrendingDown size={13} color="#EF4444" />
+                    <Text style={[styles.previewMiniLabel, { color: '#EF4444' }]}>Total Outflows</Text>
+                  </View>
+                  <Text
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    style={[styles.previewMiniVal, { color: '#EF4444' }]}
+                  >
                     -{user?.currency_symbol || 'UGX'} {summary.totalExpense.toLocaleString()}
                   </Text>
-                  <Text style={[styles.previewStatLabel, { color: colors.textMuted }]}>Total Expenses</Text>
                 </View>
+              </View>
+
+              {/* Net Cash Flow Row */}
+              <View style={[styles.previewNetRow, { borderTopColor: colors.borderSubtle }]}>
+                <Text style={[styles.previewNetLabel, { color: colors.textSecondary }]}>Net Cash Flow:</Text>
+                <Text
+                  style={[
+                    styles.previewNetVal,
+                    { color: summary.netSavings >= 0 ? '#10B981' : '#EF4444' },
+                  ]}
+                >
+                  {summary.netSavings >= 0 ? '↗ +' : '↘ -'}{user?.currency_symbol || 'UGX'} {Math.abs(summary.netSavings).toLocaleString()}
+                </Text>
               </View>
             </View>
           </ScrollView>
 
-          {/* Footer Action Buttons */}
-          <View style={[styles.footer, { borderTopColor: colors.border }]}>
+          {/* Sticky Action Footer (Always Visible) */}
+          <View
+            style={[
+              styles.footer,
+              {
+                borderTopColor: colors.border,
+                paddingBottom: Math.max(insets.bottom, Spacing.md),
+              },
+            ]}
+          >
             {format === 'pdf' && (
               <TouchableOpacity
                 activeOpacity={0.7}
                 onPress={handlePrintPreview}
-                style={[styles.previewBtn, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}
+                style={[
+                  styles.previewBtn,
+                  { backgroundColor: colors.surfaceElevated, borderColor: colors.border },
+                ]}
               >
                 <Printer size={18} color={colors.text} />
               </TouchableOpacity>
             )}
 
             <Button
-              title={isExporting ? 'Generating...' : ('Export ' + format.toUpperCase() + ' Statement')}
+              title={
+                isExporting
+                  ? 'Generating...'
+                  : format === 'excel'
+                  ? 'Export Excel (.CSV) Statement'
+                  : 'Export PDF Statement'
+              }
               size="lg"
               loading={isExporting}
               onPress={handleExport}
-              style={{ flex: 1 }}
-              icon={<Share2 size={18} color="#FFFFFF" />}
+              style={{
+                flex: 1,
+                backgroundColor: format === 'excel' ? '#10B981' : undefined,
+              }}
+              icon={
+                format === 'excel' ? (
+                  <FileSpreadsheet size={18} color="#FFFFFF" />
+                ) : (
+                  <Share2 size={18} color="#FFFFFF" />
+                )
+              }
             />
           </View>
         </View>
@@ -511,8 +590,9 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     borderWidth: 1,
-    maxHeight: '90%',
-    paddingBottom: Spacing.xl,
+    height: '88%',
+    display: 'flex',
+    flexDirection: 'column',
   },
   header: {
     flexDirection: 'row',
@@ -544,8 +624,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  scrollView: {
+    flex: 1,
+  },
   scrollBody: {
-    padding: Spacing.lg,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.lg,
     gap: Spacing.xs,
   },
   sectionLabel: {
@@ -599,32 +684,69 @@ const styles = StyleSheet.create({
   previewBox: {
     marginTop: Spacing.md,
     padding: Spacing.md,
-    borderRadius: Radius.lg,
+    borderRadius: Radius.xl,
     borderWidth: 1,
+  },
+  previewHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.sm,
   },
   previewHeading: {
     fontSize: 11,
     fontWeight: '800',
     textTransform: 'uppercase',
     letterSpacing: 0.8,
+  },
+  previewCountBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: Radius.full,
+  },
+  previewCountText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  previewCardsGrid: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
     marginBottom: Spacing.sm,
   },
-  previewGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  previewStat: {
-    alignItems: 'center',
+  previewMiniCard: {
     flex: 1,
+    padding: Spacing.sm,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
   },
-  previewStatVal: {
+  miniLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 4,
+  },
+  previewMiniLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  previewMiniVal: {
     fontSize: 14,
     fontWeight: '800',
   },
-  previewStatLabel: {
-    fontSize: 10,
+  previewNetRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: Spacing.xs,
+    borderTopWidth: 1,
+  },
+  previewNetLabel: {
+    fontSize: 12,
     fontWeight: '600',
-    marginTop: 2,
+  },
+  previewNetVal: {
+    fontSize: 13,
+    fontWeight: '800',
   },
   footer: {
     flexDirection: 'row',
