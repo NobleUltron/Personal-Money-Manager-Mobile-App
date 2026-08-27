@@ -1,4 +1,4 @@
-﻿import { apiClient } from './client';
+import { apiClient } from './client';
 import {
   Account,
   AnalyticsOverview,
@@ -333,6 +333,32 @@ export const settingsApi = {
   },
   async updatePassword(data: { currentPassword: string; newPassword: string }) {
     const res = await apiClient.patch('/api/users/password', data);
+    return res.data;
+  },
+
+  async setup2FA(): Promise<{
+    secret: string;
+    otpauthUrl: string;
+    qrCodeDataUrl: string;
+    backupCodes: string[];
+  }> {
+    const res = await apiClient.post('/api/users/two-factor/setup');
+    return res.data;
+  },
+
+  async enable2FA(data: {
+    code: string;
+    secret: string;
+    backupCodes: string[];
+  }): Promise<{ two_factor_enabled: boolean; message: string }> {
+    const res = await apiClient.post('/api/users/two-factor/enable', data);
+    return res.data;
+  },
+
+  async disable2FA(data: {
+    password: string;
+  }): Promise<{ two_factor_enabled: boolean; message: string }> {
+    const res = await apiClient.post('/api/users/two-factor/disable', data);
     return res.data;
   },
 

@@ -1,4 +1,4 @@
-﻿import {
+import {
   Body,
   Controller,
   Get,
@@ -8,7 +8,14 @@
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { UsersService } from './users.service';
-import { Toggle2faDto, UpdatePasswordDto, UpdateProfileDto, ConvertCurrencyDto } from './dto/user.dto';
+import {
+  Toggle2faDto,
+  Enable2faDto,
+  Disable2faDto,
+  UpdatePasswordDto,
+  UpdateProfileDto,
+  ConvertCurrencyDto,
+} from './dto/user.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 
@@ -43,14 +50,39 @@ export class UsersController {
     return this.usersService.updatePassword(userId, dto);
   }
 
+  @Post('two-factor/setup')
+  @ApiOperation({ summary: 'Generate TOTP secret and QR code for Authenticator App setup' })
+  async setup2FA(@CurrentUser('id') userId: bigint) {
+    return this.usersService.generate2FASetup(userId);
+  }
+
+  @Post('two-factor/enable')
+  @ApiOperation({ summary: 'Verify code and enable TOTP Authenticator 2FA with backup codes' })
+  async enable2FA(
+    @CurrentUser('id') userId: bigint,
+    @Body() dto: Enable2faDto,
+  ) {
+    return this.usersService.enable2FA(userId, dto);
+  }
+
+  @Post('two-factor/disable')
+  @ApiOperation({ summary: 'Disable 2FA security by verifying current password' })
+  async disable2FA(
+    @CurrentUser('id') userId: bigint,
+    @Body() dto: Disable2faDto,
+  ) {
+    return this.usersService.disable2FA(userId, dto);
+  }
+
   @Post('two-factor/toggle')
-  @ApiOperation({ summary: 'Enable or disable 2FA security' })
+  @ApiOperation({ summary: 'Legacy quick toggle 2FA' })
   async toggle2FA(
     @CurrentUser('id') userId: bigint,
     @Body() dto: Toggle2faDto,
   ) {
     return this.usersService.toggle2FA(userId, dto);
   }
+
   @Post('convert-currency')
   @ApiOperation({ summary: 'Convert primary currency with optional balance scaling' })
   async convertCurrency(

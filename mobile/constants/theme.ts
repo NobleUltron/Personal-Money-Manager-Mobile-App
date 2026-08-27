@@ -50,7 +50,7 @@ export const Colors = {
 };
 
 export const Gradients = {
-  primary: ['#4F46E5', '#7C3AED', '#9333EA'],
+  primary: ['#7C3AED', '#DB2777', '#F43F5E'],
   card: ['#1E1B4B', '#312E81'],
   emerald: ['#059669', '#10B981'],
   rose: ['#E11D48', '#F43F5E'],

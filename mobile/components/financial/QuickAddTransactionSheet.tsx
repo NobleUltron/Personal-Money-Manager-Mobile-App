@@ -30,11 +30,14 @@ import {
 } from 'lucide-react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../context/AuthContext';
+import { useSync } from '../../context/SyncContext';
 import { accountsApi, transactionsApi } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 import { triggerHaptic } from '../../utils/haptics';
-import { Account, Transaction } from '../../types';
+import { Account, DashboardSummary, Transaction } from '../../types';
 import { Button } from '../ui/Button';
+import { CategoryIcon } from '../ui/CategoryIcon';
+import { CATEGORIES } from '../../constants/categories';
 import { Radius, Spacing, Typography } from '../../constants/theme';
 
 interface QuickAddTransactionSheetProps {
@@ -56,22 +59,7 @@ interface QuickAddTransactionSheetProps {
   initialTransaction?: Transaction | null;
 }
 
-const CATEGORIES_CONFIG = [
-  { name: 'Food & Dining', icon: 'ðŸ”' },
-  { name: 'Housing & Rent', icon: 'ðŸ ' },
-  { name: 'Transportation', icon: 'ðŸš—' },
-  { name: 'Utilities', icon: 'ðŸ’¡' },
-  { name: 'Shopping', icon: 'ðŸ›ï¸' },
-  { name: 'Healthcare', icon: 'ðŸ’Š' },
-  { name: 'Entertainment', icon: 'ðŸŽ¬' },
-  { name: 'Salary & Wages', icon: 'ðŸ’¼' },
-  { name: 'Business Income', icon: 'ðŸ“ˆ' },
-  { name: 'Investments', icon: 'ðŸª™' },
-  { name: 'Transfer', icon: 'ðŸ”„' },
-  { name: 'Loan / Borrowed', icon: 'ðŸ’³' },
-  { name: 'Loan / Lent', icon: 'ðŸ¤' },
-  { name: 'Other', icon: 'ðŸ“¦' },
-];
+
 
 const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -104,18 +92,125 @@ export const QuickAddTransactionSheet: React.FC<QuickAddTransactionSheetProps> =
   const currencySymbol = externalCurrencySymbol ?? user?.currency_symbol ?? 'UGX';
 
   // Internal mutation (used when no external onSave provided)
+  const { isOnline, enqueueOfflineMutation } = useSync();
+
+  // Internal mutation with optimistic updates & offline queue fallback
   const internalMutation = useMutation({
-    mutationFn: (data: Parameters<typeof transactionsApi.create>[0]) =>
-      transactionsApi.create(data),
-    onSuccess: () => {
+    mutationFn: async (data: Parameters<typeof transactionsApi.create>[0]) => {
+      if (initialTransaction) {
+        return transactionsApi.update(initialTransaction.id, data as any);
+      }
+      return transactionsApi.create(data);
+    },
+    onMutate: async (newTxData) => {
       triggerHaptic.success();
+      onClose(); // Instant zero-latency dismiss!
+
+      // Cancel outgoing queries
+      await queryClient.cancelQueries({ queryKey: ['transactions'] });
+      await queryClient.cancelQueries({ queryKey: ['accounts'] });
+      await queryClient.cancelQueries({ queryKey: ['dashboard'] });
+
+      // Snapshot previous cache state
+      const prevTransactions = queryClient.getQueryData(['transactions']);
+      const prevAccounts = queryClient.getQueryData<Account[]>(['accounts']);
+      const prevDashboard = queryClient.getQueryData<DashboardSummary>(['dashboard']);
+
+      const targetAccount = (prevAccounts || accounts)?.find((a) => a.id === newTxData.accountId);
+      const isDeposit = newTxData.type === 'deposit' || (newTxData.type as string) === 'income';
+      const balanceDelta = isDeposit ? newTxData.amount : -newTxData.amount;
+
+      // 1. Optimistic Transaction
+      const optimisticTx: Transaction = {
+        id: initialTransaction ? initialTransaction.id : `temp_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+        accountId: newTxData.accountId,
+        type: newTxData.type as any,
+        amount: newTxData.amount,
+        date: newTxData.date,
+        reason: newTxData.reason,
+        category: newTxData.category || 'Other',
+        created_at: new Date().toISOString(),
+        account: targetAccount,
+      };
+
+      // 2. Optimistically update ['transactions']
+      queryClient.setQueryData(['transactions'], (old: any) => {
+        if (!old) return { data: [optimisticTx], meta: { total: 1, page: 1, limit: 20, totalPages: 1 } };
+        if (Array.isArray(old)) return [optimisticTx, ...old];
+        if (old.data && Array.isArray(old.data)) {
+          if (initialTransaction) {
+            return {
+              ...old,
+              data: old.data.map((t: Transaction) => (t.id === initialTransaction.id ? optimisticTx : t)),
+            };
+          }
+          return {
+            ...old,
+            data: [optimisticTx, ...old.data],
+            meta: old.meta ? { ...old.meta, total: (old.meta.total || 0) + 1 } : old.meta,
+          };
+        }
+        return old;
+      });
+
+      // 3. Optimistically update ['accounts']
+      queryClient.setQueryData<Account[]>(['accounts'], (old) => {
+        if (!old) return old;
+        return old.map((acc) => {
+          if (acc.id === newTxData.accountId) {
+            return { ...acc, balance: Number(acc.balance || 0) + balanceDelta };
+          }
+          return acc;
+        });
+      });
+
+      // 4. Optimistically update ['dashboard']
+      queryClient.setQueryData<DashboardSummary>(['dashboard'], (old) => {
+        if (!old) return old;
+        const updatedAccounts = (old.accounts || []).map((acc) => {
+          if (acc.id === newTxData.accountId) {
+            return { ...acc, balance: Number(acc.balance || 0) + balanceDelta };
+          }
+          return acc;
+        });
+        const updatedRecent = initialTransaction
+          ? (old.recentTransactions || []).map((t) => (t.id === initialTransaction.id ? optimisticTx : t))
+          : [optimisticTx, ...(old.recentTransactions || [])].slice(0, 10);
+
+        return {
+          ...old,
+          accounts: updatedAccounts,
+          recentTransactions: updatedRecent,
+          totalBalance: Number(old.totalBalance || 0) + balanceDelta,
+          totalDeposits: isDeposit ? Number(old.totalDeposits || 0) + newTxData.amount : Number(old.totalDeposits || 0),
+          totalWithdrawals: !isDeposit ? Number(old.totalWithdrawals || 0) + newTxData.amount : Number(old.totalWithdrawals || 0),
+        };
+      });
+
+      return { prevTransactions, prevAccounts, prevDashboard, newTxData };
+    },
+    onError: async (err: any, newTxData, context: any) => {
+      const isNetworkError =
+        err?.message?.includes('Network') ||
+        err?.message?.includes('connect') ||
+        err?.code === 'ECONNABORTED' ||
+        !err?.response;
+
+      if (isNetworkError) {
+        await enqueueOfflineMutation('create_transaction', newTxData);
+      } else {
+        if (context?.prevTransactions) queryClient.setQueryData(['transactions'], context.prevTransactions);
+        if (context?.prevAccounts) queryClient.setQueryData(['accounts'], context.prevAccounts);
+        if (context?.prevDashboard) queryClient.setQueryData(['dashboard'], context.prevDashboard);
+        triggerHaptic.error();
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
-      onClose();
-    },
-    onError: () => {
-      triggerHaptic.error();
+      queryClient.invalidateQueries({ queryKey: ['budgets'] });
+      queryClient.invalidateQueries({ queryKey: ['analytics'] });
     },
   });
 
@@ -457,7 +552,7 @@ export const QuickAddTransactionSheet: React.FC<QuickAddTransactionSheetProps> =
                 },
               ]}
             >
-              <Tag size={15} color={colors.secondary} />
+              <CategoryIcon categoryName={selectedCategory} size={18} iconSize={14} showBackground={false} customColor={showCategoryPicker ? colors.primary : colors.secondary} />
               <Text style={[styles.selectorPillText, { color: colors.text }]} numberOfLines={1}>
                 {selectedCategory}
               </Text>
@@ -634,7 +729,7 @@ export const QuickAddTransactionSheet: React.FC<QuickAddTransactionSheetProps> =
             <View style={[styles.drawerBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <Text style={[styles.drawerTitle, { color: colors.textSecondary }]}>Choose Category</Text>
               <View style={styles.chipsWrapper}>
-                {CATEGORIES_CONFIG.map((cat) => {
+                {CATEGORIES.map((cat) => {
                   const isSelected = selectedCategory === cat.name;
                   return (
                     <TouchableOpacity
@@ -653,7 +748,14 @@ export const QuickAddTransactionSheet: React.FC<QuickAddTransactionSheetProps> =
                         },
                       ]}
                     >
-                      <Text style={{ fontSize: 13, marginRight: 4 }}>{cat.icon}</Text>
+                      <CategoryIcon
+                        categoryName={cat.name}
+                        size={18}
+                        iconSize={12}
+                        showBackground={false}
+                        customColor={isSelected ? '#FFFFFF' : cat.color}
+                        style={{ marginRight: 6 }}
+                      />
                       <Text
                         style={{
                           color: isSelected ? '#FFFFFF' : colors.text,

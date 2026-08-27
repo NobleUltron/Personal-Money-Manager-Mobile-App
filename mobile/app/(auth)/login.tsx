@@ -1,6 +1,5 @@
-﻿import React, { useState } from 'react';
-import {
-  Alert,
+import React, { useState } from 'react';
+import { useWindowDimensions, Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -22,6 +21,8 @@ import { Gradients, Radius, Spacing, Typography } from '../../constants/theme';
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isDesktop = Platform.OS === 'web' && width >= 768;
   const { colors, isDark } = useTheme();
   const { login } = useAuth();
 
@@ -47,7 +48,7 @@ export default function LoginScreen() {
         triggerHaptic.selection();
         router.push({
           pathname: '/(auth)/verify-otp',
-          params: { tempToken: result.tempToken },
+          params: { tempToken: result.tempToken, method: result.method || 'totp' },
         });
       } else {
         triggerHaptic.success();
@@ -60,14 +61,17 @@ export default function LoginScreen() {
     }
   };
 
+  const desktopScrollContent = isDesktop ? { maxWidth: 500, alignSelf: 'center', width: '100%', paddingTop: 60 } : {};
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1 }}
       >
+
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, desktopScrollContent as any]}
           showsVerticalScrollIndicator={false}
         >
           {/* Header Brand */}

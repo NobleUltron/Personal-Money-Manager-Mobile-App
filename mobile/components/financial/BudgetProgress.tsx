@@ -8,6 +8,8 @@ import { usePrivacy } from '../../context/PrivacyContext';
 import { Budget } from '../../types';
 import { triggerHaptic } from '../../utils/haptics';
 import { Gradients, Radius, Spacing, Typography } from '../../constants/theme';
+import { CategoryIcon } from '../ui/CategoryIcon';
+import { getCategoryConfig } from '../../constants/categories';
 
 interface BudgetProgressProps {
   budget: Budget;

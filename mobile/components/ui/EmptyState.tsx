@@ -41,9 +41,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
       </Text>
 
       {actionTitle && onAction && (
-        <View style={styles.buttonWrapper}>
-          <Button title={actionTitle} onPress={onAction} size="md" />
-        </View>
+        <Button title={actionTitle} onPress={onAction} size="md" fullWidth={false} style={{ minWidth: 160 }} />
       )}
     </View>
   );

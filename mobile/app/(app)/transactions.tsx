@@ -32,8 +32,9 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { usePrivacy } from '../../context/PrivacyContext';
+import { useSync } from '../../context/SyncContext';
 import { accountsApi, transactionsApi } from '../../services/api';
-import { Transaction, Account } from '../../types';
+import { Transaction, Account, DashboardSummary } from '../../types';
 import { Header } from '../../components/ui/Header';
 import { TransactionItem } from '../../components/financial/TransactionItem';
 import { QuickAddTransactionSheet } from '../../components/financial/QuickAddTransactionSheet';
@@ -48,27 +49,13 @@ import { StatementExportModal } from '../../components/ui/StatementExportModal';
 import { triggerHaptic } from '../../utils/haptics';
 import { Radius, Spacing, Typography } from '../../constants/theme';
 
-const CATEGORIES_CONFIG = [
-  { name: 'Food & Dining', icon: 'ðŸ”' },
-  { name: 'Housing & Rent', icon: 'ðŸ ' },
-  { name: 'Transportation', icon: 'ðŸš—' },
-  { name: 'Utilities', icon: 'ðŸ’¡' },
-  { name: 'Shopping', icon: 'ðŸ›ï¸' },
-  { name: 'Healthcare', icon: 'ðŸ’Š' },
-  { name: 'Entertainment', icon: 'ðŸŽ¬' },
-  { name: 'Salary & Wages', icon: 'ðŸ’¼' },
-  { name: 'Business Income', icon: 'ðŸ“ˆ' },
-  { name: 'Investments', icon: 'ðŸª™' },
-  { name: 'Transfer', icon: 'ðŸ”„' },
-  { name: 'Loan / Borrowed', icon: 'ðŸ’³' },
-  { name: 'Loan / Lent', icon: 'ðŸ¤' },
-  { name: 'Other', icon: 'ðŸ“¦' },
-];
+
 
 export default function TransactionsScreen() {
   const { user } = useAuth();
   const { colors, isDark } = useTheme();
   const { formatAmount } = usePrivacy();
+  const { enqueueOfflineMutation } = useSync();
   const queryClient = useQueryClient();
 
   const currencySymbol = user?.currency_symbol || 'UGX';
@@ -145,16 +132,90 @@ export default function TransactionsScreen() {
 
   const deleteMutation = useMutation({
     mutationFn: transactionsApi.remove,
-    onSuccess: () => {
+    onMutate: async (idToDelete: string) => {
       triggerHaptic.warning();
+      if (detailModalVisible) setDetailModalVisible(false);
+
+      await queryClient.cancelQueries({ queryKey: ['transactions'] });
+      await queryClient.cancelQueries({ queryKey: ['accounts'] });
+      await queryClient.cancelQueries({ queryKey: ['dashboard'] });
+
+      const prevTransactions = queryClient.getQueryData(['transactions']);
+      const prevAccounts = queryClient.getQueryData<Account[]>(['accounts']);
+      const prevDashboard = queryClient.getQueryData<DashboardSummary>(['dashboard']);
+
+      // Find the transaction to reverse its balance impact
+      let deletedTx: Transaction | undefined;
+      if (prevTransactions) {
+        const list = (prevTransactions as any).data || (Array.isArray(prevTransactions) ? prevTransactions : []);
+        deletedTx = list.find((t: Transaction) => t.id === idToDelete);
+      }
+
+      const isDeposit = deletedTx ? (deletedTx.type === 'deposit' || (deletedTx.type as string) === 'income') : false;
+      const reverseDelta = deletedTx ? (isDeposit ? -deletedTx.amount : deletedTx.amount) : 0;
+
+      // Optimistically remove from ['transactions']
+      queryClient.setQueryData(['transactions'], (old: any) => {
+        if (!old) return old;
+        if (Array.isArray(old)) return old.filter((t: Transaction) => t.id !== idToDelete);
+        if (old.data && Array.isArray(old.data)) {
+          return {
+            ...old,
+            data: old.data.filter((t: Transaction) => t.id !== idToDelete),
+            meta: old.meta ? { ...old.meta, total: Math.max(0, (old.meta.total || 0) - 1) } : old.meta,
+          };
+        }
+        return old;
+      });
+
+      // Optimistically update account balance in ['accounts']
+      if (deletedTx && deletedTx.accountId && reverseDelta !== 0) {
+        queryClient.setQueryData<Account[]>(['accounts'], (old) => {
+          if (!old) return old;
+          return old.map((acc) => {
+            if (acc.id === deletedTx?.accountId) {
+              return { ...acc, balance: Number(acc.balance || 0) + reverseDelta };
+            }
+            return acc;
+          });
+        });
+      }
+
+      // Optimistically update ['dashboard']
+      queryClient.setQueryData<DashboardSummary>(['dashboard'], (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          recentTransactions: (old.recentTransactions || []).filter((t) => t.id !== idToDelete),
+          totalBalance: Number(old.totalBalance || 0) + reverseDelta,
+        };
+      });
+
+      return { prevTransactions, prevAccounts, prevDashboard, idToDelete };
+    },
+    onError: async (err: any, idToDelete, context: any) => {
+      const isNetworkError =
+        err?.message?.includes('Network') ||
+        err?.message?.includes('connect') ||
+        err?.code === 'ECONNABORTED' ||
+        !err?.response;
+
+      if (isNetworkError) {
+        await enqueueOfflineMutation('delete_transaction', { id: idToDelete });
+      } else {
+        if (context?.prevTransactions) queryClient.setQueryData(['transactions'], context.prevTransactions);
+        if (context?.prevAccounts) queryClient.setQueryData(['accounts'], context.prevAccounts);
+        if (context?.prevDashboard) queryClient.setQueryData(['dashboard'], context.prevDashboard);
+        triggerHaptic.error();
+        Alert.alert('Error', err.message || 'Failed to delete transaction');
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
-      if (detailModalVisible) setDetailModalVisible(false);
-    },
-    onError: (err: any) => {
-      triggerHaptic.error();
-      Alert.alert('Error', err.message || 'Failed to delete transaction');
+      queryClient.invalidateQueries({ queryKey: ['budgets'] });
+      queryClient.invalidateQueries({ queryKey: ['analytics'] });
     },
   });
 

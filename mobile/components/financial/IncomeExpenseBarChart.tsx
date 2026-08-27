@@ -1,9 +1,10 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { ArrowDownLeft, ArrowUpRight, TrendingUp, Sparkles } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
+import { usePrivacy } from '../../context/PrivacyContext';
 import { triggerHaptic } from '../../utils/haptics';
-import { Radius, Spacing } from '../../constants/theme';
+import { Radius, Spacing, Typography } from '../../constants/theme';
 
 export interface MonthlyCashflowItem {
   month: string;
@@ -23,15 +24,26 @@ export const IncomeExpenseBarChart: React.FC<IncomeExpenseBarChartProps> = ({
   currencySymbol = 'UGX',
 }) => {
   const { colors, isDark } = useTheme();
+  const { formatAmount } = usePrivacy();
+
   const [selectedMonth, setSelectedMonth] = useState<MonthlyCashflowItem | null>(null);
 
-  // Find max value for scaling height (min 1 to avoid division by zero)
+  if (data.length === 0) {
+    return (
+      <View style={styles.emptyContainer}>
+        <Text style={[styles.emptyText, { color: colors.textMuted }]}>
+          No historical cashflow records available.
+        </Text>
+      </View>
+    );
+  }
+
   const maxVal = Math.max(
     ...data.map((d) => Math.max(d.income || 0, d.expense || 0)),
     1000
   );
 
-  const chartHeight = 140;
+  const chartHeight = 150;
 
   const handleBarTap = (item: MonthlyCashflowItem) => {
     triggerHaptic.selection();
@@ -60,8 +72,11 @@ export const IncomeExpenseBarChart: React.FC<IncomeExpenseBarChartProps> = ({
       <View style={[styles.barsContainer, { height: chartHeight }]}>
         {data.map((item, idx) => {
           const isSelected = selectedMonth?.month === item.month && selectedMonth?.year === item.year;
-          const incomeHeight = Math.max(4, Math.round(((item.income || 0) / maxVal) * (chartHeight - 24)));
-          const expenseHeight = Math.max(4, Math.round(((item.expense || 0) / maxVal) * (chartHeight - 24)));
+          const incomeHeight = Math.max(6, Math.round(((item.income || 0) / maxVal) * (chartHeight - 34)));
+          const expenseHeight = Math.max(6, Math.round(((item.expense || 0) / maxVal) * (chartHeight - 34)));
+
+          const savingsRate =
+            item.income > 0 ? Math.round(((item.income - item.expense) / item.income) * 100) : 0;
 
           return (
             <TouchableOpacity
@@ -76,6 +91,35 @@ export const IncomeExpenseBarChart: React.FC<IncomeExpenseBarChartProps> = ({
                 },
               ]}
             >
+              {/* Savings Rate Micro-Badge */}
+              {item.income > 0 && (
+                <View
+                  style={[
+                    styles.rateBadge,
+                    {
+                      backgroundColor:
+                        savingsRate >= 20
+                          ? 'rgba(16, 185, 129, 0.18)'
+                          : savingsRate > 0
+                          ? 'rgba(245, 158, 11, 0.18)'
+                          : 'rgba(239, 68, 68, 0.18)',
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.rateBadgeText,
+                      {
+                        color:
+                          savingsRate >= 20 ? '#10B981' : savingsRate > 0 ? '#F59E0B' : '#EF4444',
+                      },
+                    ]}
+                  >
+                    {savingsRate > 0 ? `+${savingsRate}%` : `${savingsRate}%`}
+                  </Text>
+                </View>
+              )}
+
               {/* Dual Bars */}
               <View style={styles.barsPair}>
                 {/* Income Bar */}
@@ -138,7 +182,8 @@ export const IncomeExpenseBarChart: React.FC<IncomeExpenseBarChartProps> = ({
               style={[
                 styles.savingsTag,
                 {
-                  backgroundColor: selectedMonth.net >= 0 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                  backgroundColor:
+                    selectedMonth.net >= 0 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
                 },
               ]}
             >
@@ -148,7 +193,9 @@ export const IncomeExpenseBarChart: React.FC<IncomeExpenseBarChartProps> = ({
                   { color: selectedMonth.net >= 0 ? '#10B981' : '#EF4444' },
                 ]}
               >
-                {selectedMonth.net >= 0 ? 'Net Positive' : 'Net Deficit'}
+                {selectedMonth.net >= 0
+                  ? `+${Math.round(((selectedMonth.net || 0) / (selectedMonth.income || 1)) * 100)}% Retained`
+                  : 'Deficit'}
               </Text>
             </View>
           </View>
@@ -157,10 +204,10 @@ export const IncomeExpenseBarChart: React.FC<IncomeExpenseBarChartProps> = ({
             <View style={styles.tooltipMetric}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                 <ArrowDownLeft size={13} color="#10B981" />
-                <Text style={[styles.tooltipMetricLabel, { color: colors.textSecondary }]}>Income</Text>
+                <Text style={[styles.tooltipMetricLabel, { color: colors.textSecondary }]}>Inflow</Text>
               </View>
               <Text style={[styles.tooltipMetricVal, { color: '#10B981' }]}>
-                {currencySymbol} {Number(selectedMonth.income || 0).toLocaleString()}
+                {formatAmount(selectedMonth.income || 0, currencySymbol)}
               </Text>
             </View>
 
@@ -169,24 +216,24 @@ export const IncomeExpenseBarChart: React.FC<IncomeExpenseBarChartProps> = ({
             <View style={styles.tooltipMetric}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                 <ArrowUpRight size={13} color="#EF4444" />
-                <Text style={[styles.tooltipMetricLabel, { color: colors.textSecondary }]}>Expenses</Text>
+                <Text style={[styles.tooltipMetricLabel, { color: colors.textSecondary }]}>Outflow</Text>
               </View>
               <Text style={[styles.tooltipMetricVal, { color: '#EF4444' }]}>
-                {currencySymbol} {Number(selectedMonth.expense || 0).toLocaleString()}
+                {formatAmount(selectedMonth.expense || 0, currencySymbol)}
               </Text>
             </View>
 
             <View style={styles.tooltipDivider} />
 
             <View style={styles.tooltipMetric}>
-              <Text style={[styles.tooltipMetricLabel, { color: colors.textSecondary }]}>Savings</Text>
+              <Text style={[styles.tooltipMetricLabel, { color: colors.textSecondary }]}>Net Savings</Text>
               <Text
                 style={[
                   styles.tooltipMetricVal,
                   { color: selectedMonth.net >= 0 ? colors.text : '#EF4444' },
                 ]}
               >
-                {selectedMonth.net >= 0 ? '+' : ''}{currencySymbol} {Number(selectedMonth.net || 0).toLocaleString()}
+                {selectedMonth.net >= 0 ? '+' : ''}{formatAmount(selectedMonth.net || 0, currencySymbol)}
               </Text>
             </View>
           </View>
@@ -199,6 +246,14 @@ export const IncomeExpenseBarChart: React.FC<IncomeExpenseBarChartProps> = ({
 const styles = StyleSheet.create({
   container: {
     width: '100%',
+  },
+  emptyContainer: {
+    paddingVertical: Spacing.xl,
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 13,
+    fontWeight: '500',
   },
   legendRow: {
     flexDirection: 'row',
@@ -232,6 +287,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-end',
     paddingVertical: 4,
+  },
+  rateBadge: {
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: 4,
+    marginBottom: 4,
+  },
+  rateBadgeText: {
+    fontSize: 9,
+    fontWeight: '800',
   },
   barsPair: {
     flexDirection: 'row',

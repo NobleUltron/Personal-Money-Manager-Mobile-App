@@ -8,6 +8,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 import * as nodemailer from 'nodemailer';
+import { verifySync } from 'otplib';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -97,10 +98,26 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // If 2FA is enabled, generate 6-digit OTP and send email
+    // If 2FA is enabled
     if (user.two_factor_enabled) {
+      const tempToken = this.jwtService.sign(
+        { sub: user.id.toString(), username: user.username, is2faTemp: true },
+        { expiresIn: '15m' },
+      );
+
+      // If user has TOTP Authenticator setup
+      if (user.two_factor_secret) {
+        return {
+          requires2FA: true,
+          tempToken,
+          method: 'totp',
+          message: 'Enter the 6-digit code from your Authenticator App or a backup code.',
+        };
+      }
+
+      // Fallback: Send Email OTP if legacy 2FA
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
-      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
       await this.prisma.user.update({
         where: { id: user.id },
@@ -118,14 +135,10 @@ export class AuthService {
         );
       }
 
-      const tempToken = this.jwtService.sign(
-        { sub: user.id.toString(), username: user.username, is2faTemp: true },
-        { expiresIn: '15m' },
-      );
-
       return {
         requires2FA: true,
         tempToken,
+        method: 'email',
         message: 'Two-Factor Authentication code sent to your registered email.',
       };
     }
@@ -145,21 +158,64 @@ export class AuthService {
       where: { id: BigInt(payload.sub) },
     });
 
-    if (!user || !user.two_factor_code || user.two_factor_code !== dto.code) {
-      throw new BadRequestException('Invalid security code');
+    if (!user) {
+      throw new NotFoundException('User not found');
     }
 
-    if (user.two_factor_expires_at && new Date() > user.two_factor_expires_at) {
-      throw new BadRequestException('Security code has expired');
+    const cleanInput = dto.code.trim().toUpperCase().replace(/\s+/g, '');
+    let isValid = false;
+
+    // 1. Check TOTP Authenticator Code (6 digits)
+    if (user.two_factor_secret && /^\d{6}$/.test(cleanInput)) {
+      const verification = verifySync({ token: cleanInput, secret: user.two_factor_secret });
+      isValid = !!verification?.valid;
     }
 
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: {
-        two_factor_code: null,
-        two_factor_expires_at: null,
-      },
-    });
+    // 2. Check Backup Recovery Codes (e.g. 'A7B2-9F41' or 'A7B29F41')
+    if (!isValid && user.two_factor_backup_codes) {
+      try {
+        const backupCodes: string[] = JSON.parse(user.two_factor_backup_codes);
+        const normalizedInput = cleanInput.includes('-')
+          ? cleanInput
+          : `${cleanInput.slice(0, 4)}-${cleanInput.slice(4)}`;
+
+        const matchedIndex = backupCodes.findIndex(
+          (c) => c.toUpperCase() === cleanInput || c.toUpperCase() === normalizedInput,
+        );
+
+        if (matchedIndex !== -1) {
+          isValid = true;
+          // Burn the used backup code (one-time recovery)
+          backupCodes.splice(matchedIndex, 1);
+          await this.prisma.user.update({
+            where: { id: user.id },
+            data: {
+              two_factor_backup_codes: JSON.stringify(backupCodes),
+            },
+          });
+        }
+      } catch {
+        // Continue fallback
+      }
+    }
+
+    // 3. Check Email OTP Fallback
+    if (!isValid && user.two_factor_code && user.two_factor_code === cleanInput) {
+      if (!user.two_factor_expires_at || new Date() <= user.two_factor_expires_at) {
+        isValid = true;
+        await this.prisma.user.update({
+          where: { id: user.id },
+          data: {
+            two_factor_code: null,
+            two_factor_expires_at: null,
+          },
+        });
+      }
+    }
+
+    if (!isValid) {
+      throw new BadRequestException('Invalid security code or backup recovery code');
+    }
 
     return this.generateAuthResponse(user);
   }

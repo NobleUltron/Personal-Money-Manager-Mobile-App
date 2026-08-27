@@ -22,6 +22,8 @@ import { useTheme } from '../../context/ThemeContext';
 import { usePrivacy } from '../../context/PrivacyContext';
 import { Transaction } from '../../types';
 import { triggerHaptic } from '../../utils/haptics';
+import { getCategoryConfig } from '../../constants/categories';
+import { CategoryIcon } from '../ui/CategoryIcon';
 import { Radius, Spacing, Typography } from '../../constants/theme';
 
 interface TransactionItemProps {
@@ -102,6 +104,8 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
   };
 
   const itemMeta = getSmartIcon();
+  const catConfig = getCategoryConfig(transaction.category);
+  const displayTag = isDeposit ? 'Income' : (transaction.category || itemMeta.tag);
 
   return (
     <TouchableOpacity
@@ -116,9 +120,13 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
       ]}
     >
       {/* Visual Category / Merchant Icon */}
-      <View style={[styles.iconBox, { backgroundColor: itemMeta.bg }]}>
-        {itemMeta.icon}
-      </View>
+      {transaction.category ? (
+        <CategoryIcon categoryName={transaction.category} size={36} iconSize={17} />
+      ) : (
+        <View style={[styles.iconBox, { backgroundColor: itemMeta.bg }]}>
+          {itemMeta.icon}
+        </View>
+      )}
 
       {/* Main Description & Account / Date Info */}
       <View style={styles.details}>
@@ -136,17 +144,18 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
           style={[
             styles.typePill,
             {
-              backgroundColor: isDeposit ? 'rgba(16, 185, 129, 0.15)' : isDark ? 'rgba(239, 68, 68, 0.15)' : 'rgba(239, 68, 68, 0.1)',
+              backgroundColor: isDeposit ? 'rgba(16, 185, 129, 0.15)' : catConfig.bgColor,
             },
           ]}
         >
           <Text
             style={[
               styles.typePillText,
-              { color: isDeposit ? '#10B981' : '#EF4444' },
+              { color: isDeposit ? '#10B981' : catConfig.color },
             ]}
+            numberOfLines={1}
           >
-            {itemMeta.tag}
+            {displayTag}
           </Text>
         </View>
 

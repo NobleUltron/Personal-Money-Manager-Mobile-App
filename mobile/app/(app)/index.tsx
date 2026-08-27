@@ -1,6 +1,5 @@
 ﻿import React, { useMemo } from 'react';
-import {
-  ActivityIndicator,
+import { Platform, useWindowDimensions, ActivityIndicator,
   Image,
   RefreshControl,
   ScrollView,
@@ -46,6 +45,8 @@ import { usePrivacy } from '../../context/PrivacyContext';
 import { useQuickEntry } from '../../context/QuickEntryContext';
 import { useNotifications } from '../../context/NotificationsContext';
 import { NotificationCenterModal } from '../../components/ui/NotificationCenterModal';
+import { NetWorthBreakdownModal } from '../../components/ui/NetWorthBreakdownModal';
+import { Info } from 'lucide-react-native';
 import { analyticsApi, subscriptionsApi } from '../../services/api';
 import { triggerHaptic } from '../../utils/haptics';
 import { Card } from '../../components/ui/Card';
@@ -64,7 +65,10 @@ export default function DashboardScreen() {
   const { openQuickEntry } = useQuickEntry();
   const { unreadCount, syncAllBillReminders, checkAndNotifyBudgetLimits } = useNotifications();
   const [notifModalVisible, setNotifModalVisible] = React.useState(false);
+  const [netWorthBreakdownVisible, setNetWorthBreakdownVisible] = React.useState(false);
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isDesktop = Platform.OS === 'web' && width >= 768;
 
   // Queries
   const { data, isLoading, refetch, isRefetching } = useQuery({
@@ -194,10 +198,13 @@ export default function DashboardScreen() {
     },
   ];
 
+  const desktopScrollContent = isDesktop ? { maxWidth: 1000, alignSelf: 'center', width: '100%', paddingTop: 20 } : {};
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, desktopScrollContent as any]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -318,12 +325,33 @@ export default function DashboardScreen() {
 
               <View style={styles.cardSubRow}>
                 <Text style={styles.balanceCardSub}>
-                  Across {activeAccountsCount} active {activeAccountsCount === 1 ? 'account' : 'accounts & wallets'}
+                  Across {activeAccountsCount} active {activeAccountsCount === 1 ? 'wallet' : 'wallets'}
                 </Text>
                 {netCashFlow !== 0 && (
-                  <Text style={[styles.netFlowTag, { color: netCashFlow >= 0 ? '#6EE7B7' : '#FCA5A5' }]}>
-                    {netCashFlow >= 0 ? '▲ Net Positive' : '▼ Net Negative'}
-                  </Text>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => {
+                      triggerHaptic.selection();
+                      setNetWorthBreakdownVisible(true);
+                    }}
+                    style={[
+                      styles.netFlowPill,
+                      {
+                        backgroundColor:
+                          netCashFlow >= 0 ? 'rgba(110, 231, 183, 0.22)' : 'rgba(252, 165, 165, 0.22)',
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.netFlowTag,
+                        { color: netCashFlow >= 0 ? '#6EE7B7' : '#FCA5A5' },
+                      ]}
+                    >
+                      {netCashFlow >= 0 ? '↗ +' : '↘ -'}
+                      {formatAmount(Math.abs(netCashFlow), currencySymbol)} Net Flow
+                    </Text>
+                  </TouchableOpacity>
                 )}
               </View>
 
@@ -371,7 +399,35 @@ export default function DashboardScreen() {
               </View>
             </LinearGradient>
 
-            {/* 3. Three-Metric Financial Flow Strip */}
+            {/* 3. Monthly Financial Flow Header & Strip */}
+            <View style={styles.flowSectionHeader}>
+              <View style={styles.flowHeaderLeft}>
+                <View style={[styles.flowCalendarIconBox, { backgroundColor: 'rgba(99, 102, 241, 0.15)' }]}>
+                  <Calendar size={13} color="#6366F1" />
+                </View>
+                <Text style={[styles.flowSectionTitle, { color: colors.text }]}>
+                  {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })} Cash Flow
+                </Text>
+              </View>
+
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => {
+                  triggerHaptic.selection();
+                  router.push('/(app)/analytics');
+                }}
+                style={[
+                  styles.flowPeriodBadge,
+                  {
+                    backgroundColor: colors.surfaceElevated,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <Text style={[styles.flowPeriodBadgeText, { color: colors.primary }]}>Analytics ↗</Text>
+              </TouchableOpacity>
+            </View>
+
             <View style={styles.flowStripContainer}>
               <View style={[styles.flowStripItem, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                 <View style={styles.flowItemHeader}>
@@ -454,7 +510,7 @@ export default function DashboardScreen() {
                           router.push(srv.route as any);
                         }
                       }}
-                      style={styles.serviceItem}
+                      style={[styles.serviceItem, isDesktop && { width: 100 }]}
                     >
                       <View style={[styles.serviceIconBubble, { backgroundColor: srv.bg }]}>
                         <SrvIcon size={22} color={srv.color} strokeWidth={2.2} />
@@ -481,7 +537,7 @@ export default function DashboardScreen() {
                 }}
               >
                 <Text style={[styles.seeAllText, { color: colors.primary }]}>
-                  See All →
+                  See All ?
                 </Text>
               </TouchableOpacity>
             </View>
@@ -523,7 +579,7 @@ export default function DashboardScreen() {
                     }}
                   >
                     <Text style={[styles.seeAllText, { color: colors.primary }]}>
-                      View All →
+                      View All ?
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -553,7 +609,7 @@ export default function DashboardScreen() {
                     }}
                   >
                     <Text style={[styles.seeAllText, { color: colors.primary }]}>
-                      Manage →
+                      Manage ?
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -684,7 +740,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.xxl,
     padding: Spacing.lg,
     marginBottom: Spacing.md,
-    shadowColor: '#6366F1',
+    shadowColor: '#DB2777',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.25,
     shadowRadius: 18,
@@ -771,6 +827,47 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '800',
+  },
+    netFlowPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: Radius.full,
+  },
+  flowSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: Spacing.xs,
+    marginBottom: Spacing.sm,
+    paddingHorizontal: 2,
+  },
+  flowHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  flowCalendarIconBox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  flowSectionTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  flowPeriodBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+  },
+  flowPeriodBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
   },
   flowStripContainer: {
     flexDirection: 'row',

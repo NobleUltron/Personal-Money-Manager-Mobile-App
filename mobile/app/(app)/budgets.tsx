@@ -47,18 +47,10 @@ import { BudgetProgress } from '../../components/financial/BudgetProgress';
 import { triggerHaptic } from '../../utils/haptics';
 import { Budget } from '../../types';
 import { Gradients, Radius, Spacing, Typography } from '../../constants/theme';
+import { CategoryIcon } from '../../components/ui/CategoryIcon';
+import { CATEGORIES } from '../../constants/categories';
 
-const BUDGET_CATEGORIES = [
-  { name: 'Food & Dining', icon: '🍔' },
-  { name: 'Housing & Rent', icon: '🏠' },
-  { name: 'Transportation', icon: '🚗' },
-  { name: 'Utilities', icon: '💡' },
-  { name: 'Shopping', icon: '🛍️' },
-  { name: 'Healthcare', icon: '💊' },
-  { name: 'Entertainment', icon: '🎬' },
-  { name: 'Investments', icon: '🪙' },
-  { name: 'Other', icon: '📦' },
-];
+
 
 export default function BudgetsScreen() {
   const { user } = useAuth();
@@ -466,7 +458,7 @@ export default function BudgetsScreen() {
         <View style={{ marginBottom: Spacing.md }}>
           <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Select Category *</Text>
           <View style={styles.chipsRow}>
-            {BUDGET_CATEGORIES.map((cat) => (
+            {CATEGORIES.map((cat) => (
               <TouchableOpacity
                 key={cat.name}
                 activeOpacity={0.7}
@@ -484,7 +476,14 @@ export default function BudgetsScreen() {
                   },
                 ]}
               >
-                <Text style={{ fontSize: 13, marginRight: 4 }}>{cat.icon}</Text>
+                <CategoryIcon
+                  categoryName={cat.name}
+                  size={18}
+                  iconSize={12}
+                  showBackground={false}
+                  customColor={category === cat.name ? '#FFFFFF' : cat.color}
+                  style={{ marginRight: 6 }}
+                />
                 <Text
                   style={{
                     color: category === cat.name ? '#FFFFFF' : colors.text,

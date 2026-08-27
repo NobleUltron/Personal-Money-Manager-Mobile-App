@@ -5,7 +5,6 @@ export class Verify2faDto {
   @ApiProperty({ example: '123456' })
   @IsString()
   @IsNotEmpty()
-  @Length(6, 6)
   code: string;
 
   @ApiProperty({ example: 'temp-2fa-token-from-login' })

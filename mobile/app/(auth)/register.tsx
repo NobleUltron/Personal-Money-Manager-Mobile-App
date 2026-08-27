@@ -1,5 +1,6 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import {
+  useWindowDimensions,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -21,6 +22,8 @@ import { Gradients, Radius, Spacing, Typography } from '../../constants/theme';
 
 export default function RegisterScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isDesktop = Platform.OS === 'web' && width >= 768;
   const { colors, isDark } = useTheme();
   const { register } = useAuth();
 
@@ -65,14 +68,17 @@ export default function RegisterScreen() {
     }
   };
 
+  const desktopScrollContent = isDesktop ? { maxWidth: 500, alignSelf: 'center', width: '100%', paddingTop: 60 } : {};
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1 }}
       >
+
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, desktopScrollContent as any]}
           showsVerticalScrollIndicator={false}
         >
           {/* Header Brand */}

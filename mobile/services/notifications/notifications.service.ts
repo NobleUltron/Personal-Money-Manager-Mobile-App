@@ -1,4 +1,4 @@
-﻿import { LogBox, Platform } from 'react-native';
+import { LogBox, Platform } from 'react-native';
 LogBox.ignoreLogs(['expo-notifications: Android Push notifications']);
 import * as Notifications from 'expo-notifications';
 
@@ -215,6 +215,34 @@ export class NotificationService {
   /**
    * Send an instant test notification
    */
+    /**
+   * Send an instant custom alert
+   */
+  static async sendInstantNotification(params: {
+    title: string;
+    body: string;
+    data?: any;
+  }): Promise<string | null> {
+    if (Platform.OS === 'web') return null;
+
+    try {
+      const identifier = await Notifications.scheduleNotificationAsync({
+        content: {
+          title: params.title,
+          body: params.body,
+          data: params.data || { type: 'general' },
+          sound: 'default',
+        },
+        trigger: null,
+      });
+
+      return identifier;
+    } catch (err) {
+      console.warn('Failed to send instant notification:', err);
+      return null;
+    }
+  }
+
   static async sendTestNotification(): Promise<string | null> {
     if (Platform.OS === 'web') return null;
 

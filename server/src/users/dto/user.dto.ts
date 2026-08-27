@@ -1,5 +1,5 @@
-﻿import { ApiProperty } from '@nestjs/swagger';
-import { IsBoolean, IsEmail, IsNotEmpty, IsNumber, IsOptional, IsString, MinLength } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsArray, IsBoolean, IsEmail, IsNotEmpty, IsNumber, IsOptional, IsString, MinLength } from 'class-validator';
 
 export class UpdateProfileDto {
   @ApiProperty({ example: 'johndoe' })
@@ -31,6 +31,29 @@ export class UpdateProfileDto {
 export class Toggle2faDto {
   @ApiProperty({ example: true })
   enable: boolean;
+}
+
+export class Enable2faDto {
+  @ApiProperty({ example: '123456' })
+  @IsString()
+  @IsNotEmpty()
+  code: string;
+
+  @ApiProperty({ example: 'JBSWY3DPEHPK3PXP' })
+  @IsString()
+  @IsNotEmpty()
+  secret: string;
+
+  @ApiProperty({ example: ['1234-5678', '8765-4321'] })
+  @IsArray()
+  backupCodes: string[];
+}
+
+export class Disable2faDto {
+  @ApiProperty({ example: 'currentpassword123' })
+  @IsString()
+  @IsNotEmpty()
+  password: string;
 }
 
 export class UpdatePasswordDto {
@@ -65,4 +88,3 @@ export class ConvertCurrencyDto {
   @IsBoolean()
   convert_balances: boolean;
 }
-

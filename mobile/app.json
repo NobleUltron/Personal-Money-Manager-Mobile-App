@@ -9,7 +9,10 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.personalmoneymanager.app"
+      "bundleIdentifier": "com.personalmoneymanager.app",
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Allow Personal Money Manager to use Face ID to securely unlock your financial data."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -22,7 +25,9 @@
     },
     "plugins": [
       "expo-router",
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-local-authentication",
+      "./plugins/withCustomApkName"
     ],
     "experiments": {
       "typedRoutes": true
@@ -32,6 +37,7 @@
       "eas": {
         "projectId": "e6906906-9f8b-4d0c-b019-53dee6aef382"
       }
-    }
+    },
+    "icon": "./assets/images/icon.png"
   }
 }

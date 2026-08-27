@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -10,33 +10,47 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ShieldCheck } from 'lucide-react-native';
+import { ShieldCheck, KeyRound, ShieldAlert, AlertTriangle } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { authApi } from '../../services/api';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
+import { OtpPinInput } from '../../components/ui/OtpPinInput';
 import { triggerHaptic } from '../../utils/haptics';
 import { Radius, Spacing, Typography } from '../../constants/theme';
 
 export default function VerifyOtpScreen() {
   const router = useRouter();
-  const { tempToken } = useLocalSearchParams<{ tempToken: string }>();
+  const { tempToken, method } = useLocalSearchParams<{ tempToken: string; method?: string }>();
   const { colors, isDark } = useTheme();
   const { verify2FA } = useAuth();
 
+  const [useBackupCode, setUseBackupCode] = useState(false);
   const [code, setCode] = useState('');
+  const [backupCodeInput, setBackupCodeInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
-  const handleVerify = async () => {
+  const isTotp = method === 'totp' || !method; // Default to TOTP
+
+  const handleVerify = async (codeToSubmit?: string) => {
+    const rawCode = codeToSubmit !== undefined ? codeToSubmit : (useBackupCode ? backupCodeInput : code);
+    const cleanedCode = rawCode.trim().replace(/\s+/g, '');
+
     triggerHaptic.medium();
 
-    if (!code.trim() || code.length !== 6) {
+    if (!cleanedCode) {
       triggerHaptic.error();
-      setError('Please enter the 6-digit security code');
+      setError(useBackupCode ? 'Please enter your recovery backup code' : 'Please enter the 6-digit code');
+      return;
+    }
+
+    if (!useBackupCode && cleanedCode.length !== 6) {
+      triggerHaptic.error();
+      setError('Please enter all 6 digits');
       return;
     }
 
@@ -49,11 +63,11 @@ export default function VerifyOtpScreen() {
     setError('');
     setLoading(true);
     try {
-      await verify2FA(code.trim(), tempToken);
+      await verify2FA(cleanedCode, tempToken);
       triggerHaptic.success();
     } catch (e: any) {
       triggerHaptic.error();
-      setError(e.message || 'Invalid or expired 2FA code.');
+      setError(e.message || (useBackupCode ? 'Invalid recovery backup code' : 'Invalid or expired 2FA code.'));
     } finally {
       setLoading(false);
     }
@@ -86,18 +100,26 @@ export default function VerifyOtpScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
+          {/* Header Brand */}
           <View style={styles.brandContainer}>
             <View style={[styles.iconCircle, { backgroundColor: colors.primaryLight }]}>
-              <ShieldCheck size={32} color={colors.primary} />
+              {useBackupCode ? (
+                <KeyRound size={32} color={colors.primary} />
+              ) : (
+                <ShieldCheck size={32} color={colors.primary} />
+              )}
             </View>
             <Text style={[styles.title, { color: colors.text }]}>
-              Two-Factor Security
+              {useBackupCode ? 'Emergency Recovery' : 'Two-Factor Security'}
             </Text>
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-              Enter the 6-digit verification code sent to your registered email
+              {useBackupCode
+                ? 'Enter one of your 8-character backup recovery codes'
+                : 'Enter the 6-digit rolling code from your Authenticator App'}
             </Text>
           </View>
 
+          {/* Form Card */}
           <View
             style={[
               styles.card,
@@ -118,45 +140,89 @@ export default function VerifyOtpScreen() {
 
             {error ? (
               <View style={[styles.errorBox, { backgroundColor: colors.dangerLight }]}>
+                <AlertTriangle size={16} color={colors.danger} />
                 <Text style={[styles.errorText, { color: colors.danger }]}>{error}</Text>
               </View>
             ) : null}
 
-            <Input
-              label="6-Digit Code"
-              placeholder="000000"
-              value={code}
-              onChangeText={(val) => {
-                setCode(val);
-                if (val.length === 6) {
-                  triggerHaptic.selection();
-                }
-              }}
-              keyboardType="number-pad"
-              maxLength={6}
-              style={styles.codeInput}
-            />
+            {!useBackupCode ? (
+              <>
+                <OtpPinInput
+                  value={code}
+                  onChange={(val) => {
+                    setCode(val);
+                    setError('');
+                  }}
+                  onComplete={(completedCode) => handleVerify(completedCode)}
+                  disabled={loading}
+                />
 
-            <Button
-              title="Verify Security Code"
-              size="lg"
-              loading={loading}
-              onPress={handleVerify}
-              style={{ marginTop: Spacing.sm }}
-            />
+                <Button
+                  title="Verify Security Code"
+                  size="lg"
+                  loading={loading}
+                  onPress={() => handleVerify()}
+                  style={{ marginTop: Spacing.sm }}
+                />
+              </>
+            ) : (
+              <>
+                <Input
+                  label="Emergency Backup Code"
+                  placeholder="e.g. A7B2-9F41"
+                  value={backupCodeInput}
+                  onChangeText={(val) => {
+                    setBackupCodeInput(val);
+                    setError('');
+                  }}
+                  autoCapitalize="characters"
+                  maxLength={12}
+                  style={styles.backupInput}
+                />
 
+                <Button
+                  title="Verify Backup Code"
+                  size="lg"
+                  loading={loading}
+                  onPress={() => handleVerify()}
+                  style={{ marginTop: Spacing.sm }}
+                />
+              </>
+            )}
+
+            {/* Switch between Authenticator and Backup Code */}
             <TouchableOpacity
               activeOpacity={0.7}
-              onPress={handleResend}
-              disabled={resending}
-              style={styles.resendButton}
+              onPress={() => {
+                triggerHaptic.selection();
+                setUseBackupCode(!useBackupCode);
+                setError('');
+                setMessage('');
+              }}
+              style={styles.switchModeBtn}
             >
-              <Text style={[styles.resendText, { color: colors.primary }]}>
-                {resending ? 'Sending...' : 'Resend Code'}
+              <Text style={[styles.switchModeText, { color: colors.primary }]}>
+                {useBackupCode
+                  ? '← Use 6-Digit Authenticator App Code'
+                  : 'Lost phone? Use an Emergency Backup Code'}
               </Text>
             </TouchableOpacity>
+
+            {!isTotp && !useBackupCode && (
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={handleResend}
+                disabled={resending}
+                style={styles.resendButton}
+              >
+                <Text style={[styles.resendText, { color: colors.primary }]}>
+                  {resending ? 'Sending...' : 'Resend Email Code'}
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
 
+          {/* Back to Sign In Link */}
           <TouchableOpacity
             activeOpacity={0.7}
             onPress={() => {
@@ -210,11 +276,12 @@ const styles = StyleSheet.create({
     borderRadius: Radius.xxl,
     padding: Spacing.xl,
   },
-  codeInput: {
+  backupInput: {
     textAlign: 'center',
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: '800',
-    letterSpacing: 8,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
   },
   messageBox: {
     padding: Spacing.md,
@@ -226,20 +293,34 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   errorBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     padding: Spacing.md,
     borderRadius: Radius.md,
     marginBottom: Spacing.md,
   },
   errorText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
+    flex: 1,
+  },
+  switchModeBtn: {
+    alignSelf: 'center',
+    marginTop: Spacing.md,
+    paddingVertical: 4,
+  },
+  switchModeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    textAlign: 'center',
   },
   resendButton: {
     alignSelf: 'center',
-    marginTop: Spacing.md,
+    marginTop: Spacing.sm,
   },
   resendText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
   },
   backLink: {

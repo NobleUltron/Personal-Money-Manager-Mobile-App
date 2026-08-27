@@ -16,6 +16,8 @@ model User {
   currency              String         @default("UGX")
   currency_symbol       String         @default("UGX")
   two_factor_enabled    Boolean        @default(false)
+  two_factor_secret     String?
+  two_factor_backup_codes String?
   two_factor_code       String?
   two_factor_expires_at DateTime?
   remember_token        String?

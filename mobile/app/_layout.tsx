@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { LogBox } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -10,6 +10,8 @@ import { PrivacyProvider } from '../context/PrivacyContext';
 import { QuickEntryProvider } from '../context/QuickEntryContext';
 import { BiometricsProvider } from '../context/BiometricsContext';
 import { NotificationsProvider } from '../context/NotificationsContext';
+import { SyncProvider } from '../context/SyncContext';
+import { OfflineBanner } from '../components/ui/OfflineBanner';
 
 // Ignore Expo Go remote push warning (since Personal Money Manager uses local notifications for bill reminders & budget alerts)
 LogBox.ignoreLogs([
@@ -20,8 +22,9 @@ LogBox.ignoreLogs([
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 1,
-      staleTime: 1000 * 30, // 30 seconds
+      retry: 2,
+      staleTime: 1000 * 60, // 1 minute
+      gcTime: 1000 * 60 * 60 * 24, // 24 hours
     },
   },
 });
@@ -46,15 +49,18 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
           <AuthProvider>
-            <PrivacyProvider>
-              <NotificationsProvider>
-                <QuickEntryProvider>
-                  <BiometricsProvider>
-                    <RootNavigation />
-                  </BiometricsProvider>
-                </QuickEntryProvider>
-              </NotificationsProvider>
-            </PrivacyProvider>
+            <SyncProvider>
+              <PrivacyProvider>
+                <NotificationsProvider>
+                  <QuickEntryProvider>
+                    <BiometricsProvider>
+                      <OfflineBanner />
+                      <RootNavigation />
+                    </BiometricsProvider>
+                  </QuickEntryProvider>
+                </NotificationsProvider>
+              </PrivacyProvider>
+            </SyncProvider>
           </AuthProvider>
         </ThemeProvider>
       </QueryClientProvider>

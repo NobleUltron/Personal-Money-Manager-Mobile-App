@@ -6,7 +6,7 @@ import { TokenStorage } from '../services/storage/token.storage';
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  login: (username: string, password: string) => Promise<{ requires2FA?: boolean; tempToken?: string }>;
+  login: (username: string, password: string) => Promise<{ requires2FA?: boolean; tempToken?: string; method?: string }>;
   register: (data: { username: string; email?: string; password: string; currency?: string; currency_symbol?: string }) => Promise<void>;
   verify2FA: (code: string, tempToken: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -51,7 +51,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   async function login(username: string, password: string) {
     const res = await authApi.login({ username, password });
     if (res.requires2FA) {
-      return { requires2FA: true, tempToken: res.tempToken };
+      return { requires2FA: true, tempToken: res.tempToken, method: res.method };
     }
 
     if (res.accessToken) {

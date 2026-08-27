@@ -1,4 +1,4 @@
-﻿import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
@@ -14,6 +14,7 @@ export interface InAppAlert {
   read: boolean;
   actionUrl?: string;
   actionTitle?: string;
+  metadata?: any;
 }
 
 interface NotificationsContextType {
@@ -35,6 +36,7 @@ interface NotificationsContextType {
   markAlertAsRead: (id: string) => void;
   markAllAlertsAsRead: () => void;
   dismissAlert: (id: string) => void;
+  clearAllAlerts: () => void;
 }
 
 const NotificationsContext = createContext<NotificationsContextType>({
@@ -56,6 +58,7 @@ const NotificationsContext = createContext<NotificationsContextType>({
   markAlertAsRead: () => {},
   markAllAlertsAsRead: () => {},
   dismissAlert: () => {},
+  clearAllAlerts: () => {},
 });
 
 const BILL_REMINDERS_KEY = 'pmm_notif_bill_reminders';
@@ -63,6 +66,7 @@ const BUDGET_ALERTS_KEY = 'pmm_notif_budget_alerts';
 const DAILY_DIGEST_KEY = 'pmm_notif_daily_digest';
 const DAYS_BEFORE_KEY = 'pmm_notif_days_before';
 const IN_APP_ALERTS_KEY = 'pmm_in_app_alerts_v1';
+const DEDUP_TRACKER_KEY = 'pmm_notif_dedup_tracker_v1';
 
 export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [hasPermission, setHasPermission] = useState<boolean>(false);
@@ -89,11 +93,9 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
     if (Platform.OS === 'web') return;
 
     try {
-      // Check current permissions
       const { status } = await Notifications.getPermissionsAsync();
       setHasPermission(status === 'granted');
 
-      // Load stored toggles
       const storedBills = await SecureStore.getItemAsync(BILL_REMINDERS_KEY);
       if (storedBills !== null) setBillRemindersEnabled(storedBills === 'true');
 
@@ -120,7 +122,6 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
   const setupListeners = () => {
     if (Platform.OS === 'web') return;
 
-    // Listen for incoming notifications while app is in foreground
     notificationListener.current = Notifications.addNotificationReceivedListener((notification) => {
       const { title, body, data } = notification.request.content;
       const notifData = data as Partial<NotificationPayload> | undefined;
@@ -139,10 +140,11 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
             : notifData?.type === 'budget_warning'
             ? 'View Budget'
             : undefined,
+        metadata: notifData?.metadata,
       };
 
       setInAppAlerts((prev) => {
-        const updated = [newAlert, ...prev.slice(0, 19)]; // keep latest 20
+        const updated = [newAlert, ...prev.slice(0, 29)]; // keep latest 30
         saveInAppAlerts(updated);
         return updated;
       });
@@ -190,7 +192,6 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
         if (!hasPermission) await requestPermissions();
         await NotificationService.scheduleDailySpendingDigest(20, 0);
       } else {
-        // cancel daily digest
         const scheduled = await Notifications.getAllScheduledNotificationsAsync();
         for (const n of scheduled) {
           if (n.content.data?.type === 'daily_digest') {
@@ -209,7 +210,7 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   /**
-   * Sync all recurring bills & subscriptions
+   * Sync all recurring bills & subscriptions with deduplication
    */
   const syncAllBillReminders = useCallback(
     async (subscriptions: any[], currencySymbol: string) => {
@@ -217,9 +218,9 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
 
       try {
         for (const sub of subscriptions) {
-          if (sub.is_active && sub.next_due_date) {
+          if (sub.next_due_date) {
             await NotificationService.scheduleBillReminder({
-              billId: sub.id.toString(),
+              billId: sub.id ? sub.id.toString() : sub.name,
               billName: sub.name,
               amount: Number(sub.amount),
               currencySymbol,
@@ -236,31 +237,50 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   /**
-   * Check budget limits and trigger warnings
+   * Check budget limits and trigger warnings (with 24h anti-spam deduping)
    */
   const checkAndNotifyBudgetLimits = useCallback(
     async (budgets: any[], currencySymbol: string) => {
       if (!budgetAlertsEnabled || !budgets || budgets.length === 0) return;
 
       try {
+        let dedupMap: Record<string, number> = {};
+        const stored = await SecureStore.getItemAsync(DEDUP_TRACKER_KEY);
+        if (stored) {
+          try {
+            dedupMap = JSON.parse(stored);
+          } catch {}
+        }
+
+        const now = Date.now();
+        const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+
         for (const b of budgets) {
           const limit = Number(b.amount || 0);
           const spent = Number(b.spent || 0);
           if (limit > 0) {
             const percentage = (spent / limit) * 100;
             if (percentage >= 80) {
-              await NotificationService.sendBudgetAlert({
-                categoryName: b.category,
-                spent,
-                limit,
-                currencySymbol,
-                percentage,
-              });
+              const dedupKey = `budget_${b.category}_${percentage >= 100 ? '100' : '80'}`;
+              const lastSent = dedupMap[dedupKey] || 0;
+
+              if (now - lastSent > TWENTY_FOUR_HOURS) {
+                await NotificationService.sendBudgetAlert({
+                  categoryName: b.category,
+                  spent,
+                  limit,
+                  currencySymbol,
+                  percentage,
+                });
+                dedupMap[dedupKey] = now;
+              }
             }
           }
         }
+
+        await SecureStore.setItemAsync(DEDUP_TRACKER_KEY, JSON.stringify(dedupMap));
       } catch (err) {
-        console.warn('Failed to check budget alerts:', err);
+        console.warn('Failed to check budget limits:', err);
       }
     },
     [budgetAlertsEnabled]
@@ -272,15 +292,13 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
       if (!granted) return false;
     }
 
-    triggerHaptic.selection();
-    const id = await NotificationService.sendTestNotification();
-    if (id) {
-      triggerHaptic.success();
-      return true;
-    } else {
-      triggerHaptic.error();
-      return false;
-    }
+    const id = await NotificationService.sendInstantNotification({
+      title: '🔔 Personal Money Manager',
+      body: 'Smart Notifications & Bill Reminders are actively protecting your financial health!',
+      data: { type: 'test', url: '/(app)/settings' },
+    });
+
+    return !!id;
   };
 
   const markAlertAsRead = (id: string) => {
@@ -309,6 +327,12 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
     });
   };
 
+  const clearAllAlerts = () => {
+    triggerHaptic.warning();
+    setInAppAlerts([]);
+    saveInAppAlerts([]);
+  };
+
   const unreadCount = inAppAlerts.filter((a) => !a.read).length;
 
   return (
@@ -332,6 +356,7 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
         markAlertAsRead,
         markAllAlertsAsRead,
         dismissAlert,
+        clearAllAlerts,
       }}
     >
       {children}

@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import {
   Alert,
   Image,
@@ -67,29 +67,31 @@ import { AvatarPickerModal } from '../../components/ui/AvatarPickerModal';
 import { CurrencyConversionModal } from '../../components/ui/CurrencyConversionModal';
 import { PinCodeModal } from '../../components/ui/PinCodeModal';
 import { StatementExportModal } from '../../components/ui/StatementExportModal';
+import { TwoFactorSetupModal } from '../../components/ui/TwoFactorSetupModal';
+import { Disable2faModal } from '../../components/ui/Disable2faModal';
 import { accountsApi, transactionsApi } from '../../services/api';
 import { triggerHaptic } from '../../utils/haptics';
 import { Gradients, Radius, Spacing, Typography } from '../../constants/theme';
 
 const CURRENCIES = [
-  { code: 'UGX', name: 'Ugandan Shilling', symbol: 'USh', flag: '🇺🇬' },
-  { code: 'USD', name: 'US Dollar', symbol: '$', flag: '🇺🇸' },
-  { code: 'EUR', name: 'Euro', symbol: '€', flag: '🇪🇺' },
-  { code: 'GBP', name: 'British Pound', symbol: '£', flag: '🇬🇧' },
-  { code: 'KES', name: 'Kenyan Shilling', symbol: 'KSh', flag: '🇰🇪' },
-  { code: 'TZS', name: 'Tanzanian Shilling', symbol: 'TSh', flag: '🇹🇿' },
-  { code: 'RWF', name: 'Rwandan Franc', symbol: 'FRw', flag: '🇷🇼' },
-  { code: 'NGN', name: 'Nigerian Naira', symbol: '₦', flag: '🇳🇬' },
-  { code: 'GHS', name: 'Ghanaian Cedi', symbol: 'GH₵', flag: '🇬🇭' },
-  { code: 'ZAR', name: 'South African Rand', symbol: 'R', flag: '🇿🇦' },
-  { code: 'CAD', name: 'Canadian Dollar', symbol: 'CA$', flag: '🇨🇦' },
-  { code: 'AUD', name: 'Australian Dollar', symbol: 'A$', flag: '🇦🇺' },
-  { code: 'INR', name: 'Indian Rupee', symbol: '₹', flag: '🇮🇳' },
-  { code: 'AED', name: 'UAE Dirham', symbol: 'AED', flag: '🇦🇪' },
-  { code: 'JPY', name: 'Japanese Yen', symbol: '¥', flag: '🇯🇵' },
-  { code: 'CNY', name: 'Chinese Yuan', symbol: '¥', flag: '🇨🇳' },
-  { code: 'CHF', name: 'Swiss Franc', symbol: 'CHF', flag: '🇨🇭' },
-  { code: 'BRL', name: 'Brazilian Real', symbol: 'R$', flag: '🇧🇷' },
+  { code: 'UGX', name: 'Ugandan Shilling', symbol: 'USh', flag: 'ðŸ‡ºðŸ‡¬' },
+  { code: 'USD', name: 'US Dollar', symbol: '$', flag: 'ðŸ‡ºðŸ‡¸' },
+  { code: 'EUR', name: 'Euro', symbol: 'â‚¬', flag: 'ðŸ‡ªðŸ‡º' },
+  { code: 'GBP', name: 'British Pound', symbol: 'Â£', flag: 'ðŸ‡¬ðŸ‡§' },
+  { code: 'KES', name: 'Kenyan Shilling', symbol: 'KSh', flag: 'ðŸ‡°ðŸ‡ª' },
+  { code: 'TZS', name: 'Tanzanian Shilling', symbol: 'TSh', flag: 'ðŸ‡¹ðŸ‡¿' },
+  { code: 'RWF', name: 'Rwandan Franc', symbol: 'FRw', flag: 'ðŸ‡·ðŸ‡¼' },
+  { code: 'NGN', name: 'Nigerian Naira', symbol: 'â‚¦', flag: 'ðŸ‡³ðŸ‡¬' },
+  { code: 'GHS', name: 'Ghanaian Cedi', symbol: 'GHâ‚µ', flag: 'ðŸ‡¬ðŸ‡­' },
+  { code: 'ZAR', name: 'South African Rand', symbol: 'R', flag: 'ðŸ‡¿ðŸ‡¦' },
+  { code: 'CAD', name: 'Canadian Dollar', symbol: 'CA$', flag: 'ðŸ‡¨ðŸ‡¦' },
+  { code: 'AUD', name: 'Australian Dollar', symbol: 'A$', flag: 'ðŸ‡¦ðŸ‡º' },
+  { code: 'INR', name: 'Indian Rupee', symbol: 'â‚¹', flag: 'ðŸ‡®ðŸ‡³' },
+  { code: 'AED', name: 'UAE Dirham', symbol: 'AED', flag: 'ðŸ‡¦ðŸ‡ª' },
+  { code: 'JPY', name: 'Japanese Yen', symbol: 'Â¥', flag: 'ðŸ‡¯ðŸ‡µ' },
+  { code: 'CNY', name: 'Chinese Yuan', symbol: 'Â¥', flag: 'ðŸ‡¨ðŸ‡³' },
+  { code: 'CHF', name: 'Swiss Franc', symbol: 'CHF', flag: 'ðŸ‡¨ðŸ‡­' },
+  { code: 'BRL', name: 'Brazilian Real', symbol: 'R$', flag: 'ðŸ‡§ðŸ‡·' },
 ];
 
 export default function SettingsScreen() {
@@ -142,6 +144,8 @@ export default function SettingsScreen() {
 
   // Modals
   const [profileModalVisible, setProfileModalVisible] = useState(false);
+  const [setup2faVisible, setSetup2faVisible] = useState(false);
+  const [disable2faVisible, setDisable2faVisible] = useState(false);
   const [avatarModalVisible, setAvatarModalVisible] = useState(false);
   const [passwordModalVisible, setPasswordModalVisible] = useState(false);
   const [currencyModalVisible, setCurrencyModalVisible] = useState(false);
@@ -210,22 +214,13 @@ export default function SettingsScreen() {
     }
   };
 
-  // 2. Handle 2FA Toggle
-  const handleToggle2FA = async (value: boolean) => {
+  // 2. Handle 2FA Toggle (Authenticator App & Backup Codes)
+  const handleToggle2FA = (value: boolean) => {
     triggerHaptic.selection();
-    try {
-      await settingsApi.toggle2FA(value);
-      updateUserData({ two_factor_enabled: value });
-      triggerHaptic.success();
-      Alert.alert(
-        value ? '2FA Activated' : '2FA Deactivated',
-        value
-          ? 'Two-Factor Authentication is now active. A verification OTP code will be sent to your email on next login.'
-          : 'Two-Factor Authentication has been turned off.'
-      );
-    } catch (e: any) {
-      triggerHaptic.error();
-      Alert.alert('Error', e.message || 'Failed to update 2FA status');
+    if (value) {
+      setSetup2faVisible(true);
+    } else {
+      setDisable2faVisible(true);
     }
   };
 
@@ -505,7 +500,7 @@ export default function SettingsScreen() {
             </View>
 
             <Text style={[styles.currencyTag, { color: colors.primary, backgroundColor: isDark ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.1)' }]}>
-              {user?.currency || 'UGX'} • {user?.currency_symbol || 'USh'}
+              {user?.currency || 'UGX'} â€¢ {user?.currency_symbol || 'USh'}
             </Text>
           </View>
         </LinearGradient>
@@ -767,16 +762,20 @@ export default function SettingsScreen() {
           </View>
 
           {/* 2FA Toggle */}
-          <View style={[styles.menuItem, { borderBottomColor: colors.borderSubtle }]}>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => handleToggle2FA(!user?.two_factor_enabled)}
+            style={[styles.menuItem, { borderBottomColor: colors.borderSubtle }]}
+          >
             <View style={[styles.menuIconBox, { backgroundColor: 'rgba(16, 185, 129, 0.15)' }]}>
               <ShieldCheck size={18} color="#10B981" />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.menuText, { color: colors.text }]}>
-                Two-Factor Authentication
+                Two-Factor Authentication (2FA)
               </Text>
               <Text style={[styles.menuSubtext, { color: colors.textSecondary }]}>
-                6-digit email security code on login
+                Google Authenticator & backup recovery codes
               </Text>
             </View>
             <Switch
@@ -784,7 +783,7 @@ export default function SettingsScreen() {
               onValueChange={handleToggle2FA}
               trackColor={{ false: colors.border, true: colors.success }}
             />
-          </View>
+          </TouchableOpacity>
 
           {/* Change Password */}
           <TouchableOpacity
@@ -948,7 +947,7 @@ export default function SettingsScreen() {
             <View style={{ flex: 1 }}>
               <Text style={[styles.menuText, { color: colors.text }]}>Send Test Notification</Text>
               <Text style={[styles.menuSubtext, { color: testNotifSuccess ? '#10B981' : colors.textSecondary }]}>
-                {testNotifSuccess ? '✓ Test banner sent successfully!' : 'Preview push notification appearance'}
+                {testNotifSuccess ? 'âœ“ Test banner sent successfully!' : 'Preview push notification appearance'}
               </Text>
             </View>
             <ChevronRight size={18} color={colors.textMuted} />
@@ -1089,7 +1088,7 @@ export default function SettingsScreen() {
         {/* 7. App Info Footer */}
         <View style={styles.appFooter}>
           <Text style={[styles.appVersionText, { color: colors.textMuted }]}>
-            Personal Money Manager • v1.0.0
+            Personal Money Manager â€¢ v1.0.0
           </Text>
           <Text style={[styles.appLegalText, { color: colors.textMuted }]}>
             Self-hosted & Local Encrypted Storage
@@ -1459,6 +1458,24 @@ export default function SettingsScreen() {
         targetCurrency={targetCurrencyForConversion}
         onConfirm={handleConfirmConversion}
         loading={conversionLoading}
+      />
+
+      {/* Two-Factor Authentication Setup Modal */}
+      <TwoFactorSetupModal
+        visible={setup2faVisible}
+        onClose={() => setSetup2faVisible(false)}
+        onSuccess={() => {
+          updateUserData({ two_factor_enabled: true });
+        }}
+      />
+
+      {/* Disable 2FA Security Modal */}
+      <Disable2faModal
+        visible={disable2faVisible}
+        onClose={() => setDisable2faVisible(false)}
+        onSuccess={() => {
+          updateUserData({ two_factor_enabled: false });
+        }}
       />
     </SafeAreaView>
   );

@@ -1,12 +1,22 @@
-﻿import {
+import {
   BadRequestException,
   Injectable,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
+import * as crypto from 'crypto';
+import { generateSecret, generateURI, verifySync } from 'otplib';
+import * as QRCode from 'qrcode';
 import { PrismaService } from '../prisma/prisma.service';
-import { Toggle2faDto, UpdatePasswordDto, UpdateProfileDto, ConvertCurrencyDto } from './dto/user.dto';
+import {
+  Toggle2faDto,
+  Enable2faDto,
+  Disable2faDto,
+  UpdatePasswordDto,
+  UpdateProfileDto,
+  ConvertCurrencyDto,
+} from './dto/user.dto';
 
 @Injectable()
 export class UsersService {
@@ -21,12 +31,14 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
 
-    const { password, two_factor_code, ...result } = user;
-    return result;
+    const { password, two_factor_code, two_factor_secret, two_factor_backup_codes, ...result } = user;
+    return {
+      ...result,
+      has_2fa_secret: !!two_factor_secret,
+    };
   }
 
   async updateProfile(userId: bigint, dto: UpdateProfileDto) {
-    // Check if username is taken by another user
     const existing = await this.prisma.user.findFirst({
       where: {
         username: dto.username,
@@ -49,7 +61,7 @@ export class UsersService {
       },
     });
 
-    const { password, two_factor_code, ...result } = updated;
+    const { password, two_factor_code, two_factor_secret, two_factor_backup_codes, ...result } = updated;
     return result;
   }
 
@@ -76,6 +88,100 @@ export class UsersService {
     return { message: 'Password updated successfully' };
   }
 
+  // --- 2FA Management (TOTP & Backup Codes) ---
+
+  async generate2FASetup(userId: bigint) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    const secret = generateSecret();
+    const otpauthUrl = generateURI({
+      issuer: 'Personal Money Manager',
+      label: user.username,
+      secret,
+    });
+    const qrCodeDataUrl = await QRCode.toDataURL(otpauthUrl, {
+      margin: 1,
+      width: 260,
+      color: {
+        dark: '#000000',
+        light: '#FFFFFF',
+      },
+    });
+
+    // Generate 8 random one-time backup recovery codes
+    const backupCodes: string[] = [];
+    for (let i = 0; i < 8; i++) {
+      const part1 = crypto.randomBytes(2).toString('hex').toUpperCase();
+      const part2 = crypto.randomBytes(2).toString('hex').toUpperCase();
+      backupCodes.push(`${part1}-${part2}`);
+    }
+
+    return {
+      secret,
+      otpauthUrl,
+      qrCodeDataUrl,
+      backupCodes,
+    };
+  }
+
+  async enable2FA(userId: bigint, dto: Enable2faDto) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    const cleanCode = dto.code.replace(/\s+/g, '');
+    const verification = verifySync({ token: cleanCode, secret: dto.secret });
+    const isValid = !!verification?.valid;
+
+    if (!isValid) {
+      throw new BadRequestException(
+        'Invalid 6-digit code. Please ensure the code in your Authenticator App is current and your device clock is accurate.',
+      );
+    }
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        two_factor_enabled: true,
+        two_factor_secret: dto.secret,
+        two_factor_backup_codes: JSON.stringify(dto.backupCodes),
+        two_factor_code: null,
+        two_factor_expires_at: null,
+      },
+    });
+
+    return {
+      two_factor_enabled: true,
+      message: 'Two-Factor Authentication is successfully activated!',
+    };
+  }
+
+  async disable2FA(userId: bigint, dto: Disable2faDto) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    const isMatch = await bcrypt.compare(dto.password, user.password);
+    if (!isMatch) {
+      throw new UnauthorizedException('Incorrect password. Please verify your password to disable 2FA.');
+    }
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        two_factor_enabled: false,
+        two_factor_secret: null,
+        two_factor_backup_codes: null,
+        two_factor_code: null,
+        two_factor_expires_at: null,
+      },
+    });
+
+    return {
+      two_factor_enabled: false,
+      message: 'Two-Factor Authentication has been disabled.',
+    };
+  }
+
   async toggle2FA(userId: bigint, dto: Toggle2faDto) {
     const updated = await this.prisma.user.update({
       where: { id: userId },
@@ -91,10 +197,10 @@ export class UsersService {
       message: dto.enable ? 'Two-Factor Authentication enabled' : 'Two-Factor Authentication disabled',
     };
   }
+
   async convertCurrency(userId: bigint, dto: ConvertCurrencyDto) {
     if (dto.convert_balances && dto.rate && dto.rate > 0) {
       await this.prisma.$transaction(async (tx) => {
-        // 1. Update Accounts initial_balance
         const accounts = await tx.account.findMany({ where: { user_id: userId } });
         for (const acc of accounts) {
           const newInitial = Number(acc.initial_balance) * dto.rate;
@@ -103,7 +209,6 @@ export class UsersService {
             data: { initial_balance: Math.round(newInitial * 100) / 100 },
           });
 
-          // 2. Update Transactions for this account
           const transactions = await tx.transaction.findMany({ where: { accountId: acc.id } });
           for (const t of transactions) {
             const newAmount = Number(t.amount) * dto.rate;
@@ -114,7 +219,6 @@ export class UsersService {
           }
         }
 
-        // 3. Update Budgets
         const budgets = await tx.budget.findMany({ where: { user_id: userId } });
         for (const b of budgets) {
           const newAmount = Number(b.amount) * dto.rate;
@@ -124,7 +228,6 @@ export class UsersService {
           });
         }
 
-        // 4. Update Subscriptions
         const subscriptions = await tx.subscription.findMany({ where: { user_id: userId } });
         for (const s of subscriptions) {
           const newAmount = Number(s.amount) * dto.rate;
@@ -134,7 +237,6 @@ export class UsersService {
           });
         }
 
-        // 5. Update Loans
         const loans = await tx.loan.findMany({ where: { user_id: userId } });
         for (const l of loans) {
           const newAmount = Number(l.amount) * dto.rate;
@@ -148,7 +250,6 @@ export class UsersService {
           });
         }
 
-        // 6. Update Goals
         const goals = await tx.goal.findMany({ where: { user_id: userId } });
         for (const g of goals) {
           const newTarget = Number(g.target_amount) * dto.rate;
@@ -162,7 +263,6 @@ export class UsersService {
           });
         }
 
-        // 7. Update User Currency
         await tx.user.update({
           where: { id: userId },
           data: {
@@ -184,4 +284,3 @@ export class UsersService {
     return this.getProfile(userId);
   }
 }
-

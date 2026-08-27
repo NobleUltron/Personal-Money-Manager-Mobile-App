@@ -1,12 +1,13 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import Svg, { G, Circle, Path } from 'react-native-svg';
+import Svg, { G, Circle } from 'react-native-svg';
+import { ChevronRight } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { usePrivacy } from '../../context/PrivacyContext';
 import { triggerHaptic } from '../../utils/haptics';
 import { Radius, Spacing, Typography } from '../../constants/theme';
 
-interface SliceData {
+export interface SliceData {
   category: string;
   amount: number;
   percentage: number;
@@ -14,9 +15,10 @@ interface SliceData {
 }
 
 interface DonutChartProps {
-  data: { category: string; amount: number; percentage: number }[];
+  data: { category: string; amount: number; percentage: number; color?: string }[];
   currencySymbol?: string;
   totalAmount: number;
+  onCategoryPress?: (slice: SliceData) => void;
 }
 
 const PALETTE = [
@@ -35,6 +37,7 @@ export const DonutChart: React.FC<DonutChartProps> = ({
   data = [],
   currencySymbol = 'UGX',
   totalAmount,
+  onCategoryPress,
 }) => {
   const { colors, isDark } = useTheme();
   const { formatAmount } = usePrivacy();
@@ -50,7 +53,7 @@ export const DonutChart: React.FC<DonutChartProps> = ({
   // Prepare slices with colors
   const slices: SliceData[] = data.map((item, idx) => ({
     ...item,
-    color: PALETTE[idx % PALETTE.length],
+    color: item.color || PALETTE[idx % PALETTE.length],
   }));
 
   let accumulatedAngle = 0;
@@ -61,6 +64,9 @@ export const DonutChart: React.FC<DonutChartProps> = ({
       setSelectedSlice(null);
     } else {
       setSelectedSlice(slice);
+    }
+    if (onCategoryPress) {
+      onCategoryPress(slice);
     }
   };
 
@@ -118,7 +124,11 @@ export const DonutChart: React.FC<DonutChartProps> = ({
         </Svg>
 
         {/* Center Readout Text */}
-        <View style={[styles.centerTextContainer, { width: (radius - strokeWidth / 2) * 2 }]}>
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={() => selectedSlice && onCategoryPress && onCategoryPress(selectedSlice)}
+          style={[styles.centerTextContainer, { width: (radius - strokeWidth / 2) * 2 }]}
+        >
           <Text style={[styles.centerLabel, { color: colors.textSecondary }]}>
             {selectedSlice ? selectedSlice.category : 'Total Spent'}
           </Text>
@@ -135,10 +145,10 @@ export const DonutChart: React.FC<DonutChartProps> = ({
           </Text>
           {selectedSlice && (
             <Text style={[styles.centerPct, { color: selectedSlice.color }]}>
-              {selectedSlice.percentage}% of total
+              {selectedSlice.percentage}% (Tap for details)
             </Text>
           )}
-        </View>
+        </TouchableOpacity>
       </View>
 
       {/* Legend Chips Grid */}
@@ -220,9 +230,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   centerPct: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '800',
     marginTop: 2,
+    textAlign: 'center',
   },
   legendContainer: {
     flexDirection: 'row',
