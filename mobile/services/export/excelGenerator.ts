@@ -87,13 +87,19 @@ export class StatementExcelGenerator {
     );
 
     data.transactions.forEach((tx) => {
+      const typeStr = String(tx.type || '').toLowerCase();
+      const isIncome = typeStr === 'income' || typeStr === 'deposit';
+      const isExpense = typeStr === 'expense' || typeStr === 'withdrawal';
+      const typeDisplay = isIncome ? 'Income' : isExpense ? 'Expense' : tx.type;
+      const signedAmount = isExpense ? -Math.abs(tx.amount) : tx.amount;
+
       lines.push(
         [
           escapeCsv(tx.id),
           escapeCsv(tx.date ? new Date(tx.date).toISOString().split('T')[0] : ''),
-          escapeCsv(tx.type),
+          escapeCsv(typeDisplay),
           escapeCsv(tx.category),
-          escapeCsv(tx.amount),
+          escapeCsv(signedAmount),
           escapeCsv(data.currency),
           escapeCsv(tx.accountName || ''),
           escapeCsv(tx.description || ''),

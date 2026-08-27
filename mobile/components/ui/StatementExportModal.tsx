@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   ActivityIndicator,
   Modal as RNModal,
@@ -17,6 +17,8 @@ import {
   Printer,
   Share2,
   Sliders,
+  TrendingDown,
+  TrendingUp,
   X,
 } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
@@ -38,6 +40,16 @@ interface StatementExportModalProps {
   transactions?: Transaction[];
   accounts?: Account[];
 }
+
+export const isIncomeType = (type?: string) => {
+  const t = String(type || '').toLowerCase();
+  return t === 'income' || t === 'deposit';
+};
+
+export const isExpenseType = (type?: string) => {
+  const t = String(type || '').toLowerCase();
+  return t === 'expense' || t === 'withdrawal';
+};
 
 export const StatementExportModal: React.FC<StatementExportModalProps> = ({
   visible,
@@ -85,12 +97,14 @@ export const StatementExportModal: React.FC<StatementExportModalProps> = ({
       // 2. Account Filter
       if (selectedAccountId !== 'all') {
         const accId = tx.accountId || (tx as any).account_id;
-      if (String(accId) !== String(selectedAccountId)) return false;
+        if (String(accId) !== String(selectedAccountId)) return false;
       }
 
       // 3. Type Filter
-      if (typeFilter !== 'all') {
-        if (tx.type !== typeFilter) return false;
+      if (typeFilter === 'income') {
+        if (!isIncomeType(tx.type)) return false;
+      } else if (typeFilter === 'expense') {
+        if (!isExpenseType(tx.type)) return false;
       }
 
       return true;
@@ -104,8 +118,8 @@ export const StatementExportModal: React.FC<StatementExportModalProps> = ({
 
     filteredTransactions.forEach((tx) => {
       const amt = Number(tx.amount) || 0;
-      if (tx.type === 'income') totalIncome += amt;
-      else if (tx.type === 'expense') totalExpense += amt;
+      if (isIncomeType(tx.type)) totalIncome += amt;
+      else if (isExpenseType(tx.type)) totalExpense += amt;
     });
 
     const totalBalance = accounts.reduce((sum, acc) => sum + (Number(acc.balance) || 0), 0);
@@ -247,7 +261,7 @@ export const StatementExportModal: React.FC<StatementExportModalProps> = ({
                 ]}
               >
                 <FileText size={24} color={format === 'pdf' ? colors.primary : colors.textSecondary} />
-                <View>
+                <View style={{ flex: 1 }}>
                   <Text style={[styles.formatTitle, { color: format === 'pdf' ? colors.primary : colors.text }]}>
                     PDF Document
                   </Text>
@@ -277,7 +291,7 @@ export const StatementExportModal: React.FC<StatementExportModalProps> = ({
                 ]}
               >
                 <FileSpreadsheet size={24} color={format === 'excel' ? '#10B981' : colors.textSecondary} />
-                <View>
+                <View style={{ flex: 1 }}>
                   <Text style={[styles.formatTitle, { color: format === 'excel' ? '#10B981' : colors.text }]}>
                     Excel Spreadsheet
                   </Text>
@@ -331,13 +345,52 @@ export const StatementExportModal: React.FC<StatementExportModalProps> = ({
               })}
             </View>
 
-            {/* 3. Account Scope Filter */}
+            {/* 3. Transaction Type Scope */}
+            <Text style={[styles.sectionLabel, { color: colors.textSecondary, marginTop: Spacing.md }]}>
+              Transaction Type
+            </Text>
+            <View style={styles.chipsWrap}>
+              {[
+                { id: 'all', label: 'All Transactions' },
+                { id: 'income', label: 'Income Only (+)' },
+                { id: 'expense', label: 'Expenses Only (-)' },
+              ].map((item) => {
+                const isSelected = typeFilter === item.id;
+                return (
+                  <TouchableOpacity
+                    key={item.id}
+                    activeOpacity={0.7}
+                    onPress={() => {
+                      triggerHaptic.selection();
+                      setTypeFilter(item.id as TypeFilter);
+                    }}
+                    style={[
+                      styles.chip,
+                      {
+                        backgroundColor: isSelected ? colors.primary : colors.surfaceElevated,
+                        borderColor: isSelected ? colors.primary : colors.border,
+                      },
+                    ]}
+                  >
+                    <Text style={[styles.chipText, { color: isSelected ? '#FFFFFF' : colors.text }]}>
+                      {item.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {/* 4. Account Scope Filter */}
             {accounts.length > 1 && (
               <>
                 <Text style={[styles.sectionLabel, { color: colors.textSecondary, marginTop: Spacing.md }]}>
                   Account Filter
                 </Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{ gap: 8, paddingRight: Spacing.md }}
+                >
                   <TouchableOpacity
                     activeOpacity={0.7}
                     onPress={() => {
@@ -385,7 +438,7 @@ export const StatementExportModal: React.FC<StatementExportModalProps> = ({
               </>
             )}
 
-            {/* 4. Live Summary Card Preview */}
+            {/* 5. Live Summary Card Preview */}
             <View
               style={[
                 styles.previewBox,
@@ -434,7 +487,7 @@ export const StatementExportModal: React.FC<StatementExportModalProps> = ({
             )}
 
             <Button
-              title={isExporting ? 'Generating...' : `Export ${format.toUpperCase()} Statement`}
+              title={isExporting ? 'Generating...' : ('Export ' + format.toUpperCase() + ' Statement')}
               size="lg"
               loading={isExporting}
               onPress={handleExport}
@@ -451,22 +504,21 @@ export const StatementExportModal: React.FC<StatementExportModalProps> = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(2, 6, 23, 0.75)',
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
     justifyContent: 'flex-end',
   },
   modalCard: {
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    borderWidth: 1.5,
-    borderBottomWidth: 0,
-    maxHeight: '85%',
-    overflow: 'hidden',
+    borderWidth: 1,
+    maxHeight: '90%',
+    paddingBottom: Spacing.xl,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: Spacing.md,
+    paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
   },
@@ -478,12 +530,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '800',
   },
   subtitle: {
-    fontSize: 11,
-    fontWeight: '500',
+    fontSize: 12,
+    marginTop: 1,
   },
   closeBtn: {
     width: 32,
@@ -493,41 +545,36 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   scrollBody: {
-    padding: Spacing.md,
-    paddingBottom: Spacing.xl,
+    padding: Spacing.lg,
+    gap: Spacing.xs,
   },
   sectionLabel: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 11,
+    fontWeight: '800',
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.8,
     marginBottom: Spacing.xs,
   },
   formatRow: {
-    gap: 8,
+    gap: Spacing.sm,
   },
   formatCard: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: Spacing.md,
-    borderRadius: Radius.xl,
+    borderRadius: Radius.lg,
     borderWidth: 1.5,
-    gap: 12,
-    position: 'relative',
+    gap: Spacing.md,
   },
   formatTitle: {
-    fontSize: 14,
-    fontWeight: '800',
+    fontSize: 15,
+    fontWeight: '700',
   },
   formatSub: {
-    fontSize: 11,
+    fontSize: 12,
     marginTop: 2,
-    maxWidth: '85%',
   },
   checkDot: {
-    position: 'absolute',
-    top: 14,
-    right: 14,
     width: 20,
     height: 20,
     borderRadius: 10,
@@ -540,8 +587,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     borderRadius: Radius.full,
     borderWidth: 1,
   },
@@ -550,28 +597,28 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   previewBox: {
-    marginTop: Spacing.lg,
+    marginTop: Spacing.md,
     padding: Spacing.md,
-    borderRadius: Radius.xl,
+    borderRadius: Radius.lg,
     borderWidth: 1,
   },
   previewHeading: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '800',
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 8,
+    letterSpacing: 0.8,
+    marginBottom: Spacing.sm,
   },
   previewGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
   },
   previewStat: {
     alignItems: 'center',
+    flex: 1,
   },
   previewStatVal: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '800',
   },
   previewStatLabel: {
@@ -582,17 +629,17 @@ const styles = StyleSheet.create({
   footer: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.md,
     gap: Spacing.sm,
-    padding: Spacing.md,
     borderTopWidth: 1,
   },
   previewBtn: {
     width: 48,
     height: 48,
-    borderRadius: Radius.xl,
-    borderWidth: 1,
+    borderRadius: Radius.md,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
   },
 });
-
