@@ -7,6 +7,7 @@
     "userInterfaceStyle": "dark",
     "scheme": "personal-money-manager",
     "newArchEnabled": true,
+    "icon": "./assets/images/icon.png",
     "splash": {
       "image": "./assets/images/icon.png",
       "resizeMode": "contain",
@@ -21,6 +22,7 @@
     },
     "android": {
       "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#020617"
       },
       "package": "com.personalmoneymanager.app"
@@ -42,7 +44,6 @@
       "eas": {
         "projectId": "e6906906-9f8b-4d0c-b019-53dee6aef382"
       }
-    },
-    "icon": "./assets/images/icon.png"
+    }
   }
 }
