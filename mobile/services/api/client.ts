@@ -8,15 +8,20 @@ import { TokenStorage } from '../storage/token.storage';
 // On iOS simulator / web: localhost
 // Or custom EXPO_PUBLIC_API_URL / local LAN IP
 function getBaseUrl(): string {
-  if (process.env.EXPO_PUBLIC_API_URL) {
-    return process.env.EXPO_PUBLIC_API_URL;
+  // In Expo Go / local development, prioritize the active local machine IP for instant live API updates
+  if (__DEV__) {
+    const hostUri =
+      Constants.expoConfig?.hostUri ||
+      (Constants as any).manifest?.debuggerHost ||
+      (Constants as any).manifest2?.extra?.expoGo?.debuggerHost;
+    if (hostUri) {
+      const ip = hostUri.split(':')[0];
+      return `http://${ip}:3000`;
+    }
   }
 
-  // Detect host from Expo Constants (works with Expo Go on physical device)
-  const hostUri = Constants.expoConfig?.hostUri || (Constants as any).manifest?.debuggerHost || (Constants as any).manifest2?.extra?.expoGo?.debuggerHost;
-  if (hostUri) {
-    const ip = hostUri.split(':')[0];
-    return "http://" + ip + ":3000";
+  if (process.env.EXPO_PUBLIC_API_URL) {
+    return process.env.EXPO_PUBLIC_API_URL;
   }
 
   if (Platform.OS === 'android') {
