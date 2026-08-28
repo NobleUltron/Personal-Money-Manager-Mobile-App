@@ -44,10 +44,11 @@ import { useTheme } from '../../context/ThemeContext';
 import { usePrivacy } from '../../context/PrivacyContext';
 import { useQuickEntry } from '../../context/QuickEntryContext';
 import { useNotifications } from '../../context/NotificationsContext';
-import { NotificationCenterModal } from '../../components/ui/NotificationCenterModal';
+import { NotificationCenterModal } from '../../components/notifications/NotificationCenterModal';
+import { WeeklyDigestModal } from '../../components/notifications/WeeklyDigestModal';
 import { NetWorthBreakdownModal } from '../../components/ui/NetWorthBreakdownModal';
 import { Info } from 'lucide-react-native';
-import { analyticsApi, subscriptionsApi } from '../../services/api';
+import { analyticsApi, subscriptionsApi, loansApi } from '../../services/api';
 import { triggerHaptic } from '../../utils/haptics';
 import { Card } from '../../components/ui/Card';
 import { StatCard } from '../../components/ui/StatCard';
@@ -65,6 +66,7 @@ export default function DashboardScreen() {
   const { openQuickEntry } = useQuickEntry();
   const { unreadCount, syncAllBillReminders, checkAndNotifyBudgetLimits } = useNotifications();
   const [notifModalVisible, setNotifModalVisible] = React.useState(false);
+  const [weeklyDigestVisible, setWeeklyDigestVisible] = React.useState(false);
   const [netWorthBreakdownVisible, setNetWorthBreakdownVisible] = React.useState(false);
   const router = useRouter();
   const { width } = useWindowDimensions();
@@ -81,12 +83,16 @@ export default function DashboardScreen() {
     queryFn: () => subscriptionsApi.getAll(),
   });
 
-  // Auto-sync bill reminders & budget alerts
+  const { data: loansData } = useQuery({
+    queryKey: ['loans'],
+    queryFn: () => loansApi.getAll(),
+  });
+
+  // Auto-sync bill & loan reminders
   React.useEffect(() => {
-    if (subscriptions && subscriptions.length > 0) {
-      syncAllBillReminders(subscriptions, user?.currency_symbol || user?.currency || 'UGX');
-    }
-  }, [subscriptions, user?.currency, user?.currency_symbol, syncAllBillReminders]);
+    const loansList = Array.isArray(loansData) ? loansData : (loansData as any)?.loans || [];
+    syncAllBillReminders(subscriptions, loansList, user?.currency_symbol || user?.currency || 'UGX');
+  }, [subscriptions, loansData, user?.currency, user?.currency_symbol, syncAllBillReminders]);
 
   React.useEffect(() => {
     if (data?.budgets && data.budgets.length > 0) {
@@ -626,7 +632,18 @@ export default function DashboardScreen() {
           </>
         )}
       </ScrollView>
-      <NotificationCenterModal visible={notifModalVisible} onClose={() => setNotifModalVisible(false)} />
+            <NotificationCenterModal
+        visible={notifModalVisible}
+        onClose={() => setNotifModalVisible(false)}
+        onOpenWeeklyDigest={() => setWeeklyDigestVisible(true)}
+      />
+      <WeeklyDigestModal
+        visible={weeklyDigestVisible}
+        onClose={() => setWeeklyDigestVisible(false)}
+        currencySymbol={currencySymbol}
+        onNavigateAnalytics={() => router.push('/(app)/analytics')}
+        onNavigateSubscriptions={() => router.push('/(app)/subscriptions')}
+      />
     </SafeAreaView>
   );
 }
@@ -985,7 +1002,28 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     marginBottom: Spacing.md,
   },
+  digestPillBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 10,
+    borderRadius: Radius.xl,
+    borderWidth: 1,
+    marginBottom: Spacing.sm,
+  },
+  digestPillIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  digestPillTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  digestPillSub: {
+    fontSize: 11,
+    marginTop: 1,
+  },
 });
-
-
-

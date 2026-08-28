@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { budgetsApi, subscriptionsApi } from '../services/api';
+import { budgetsApi, subscriptionsApi, loansApi } from '../services/api';
 import { useNotifications } from '../context/NotificationsContext';
 import { useAuth } from '../context/AuthContext';
 import { Budget, Subscription } from '../types';
@@ -10,6 +10,7 @@ export function useSmartNotificationSync() {
   const {
     billRemindersEnabled,
     budgetAlertsEnabled,
+    loanRemindersEnabled,
     reminderDaysBefore,
     syncAllBillReminders,
     checkAndNotifyBudgetLimits,
@@ -23,6 +24,12 @@ export function useSmartNotificationSync() {
     enabled: !!user && billRemindersEnabled,
   });
 
+  const { data: loansData } = useQuery({
+    queryKey: ['loans'],
+    queryFn: loansApi.getAll,
+    enabled: !!user && loanRemindersEnabled,
+  });
+
   const { data: budgets } = useQuery<Budget[]>({
     queryKey: ['budgets'],
     queryFn: budgetsApi.getAll,
@@ -31,10 +38,9 @@ export function useSmartNotificationSync() {
 
   // 1. Sync upcoming bill alarms whenever subscriptions or reminder window changes
   useEffect(() => {
-    if (subscriptions && subscriptions.length > 0 && billRemindersEnabled) {
-      syncAllBillReminders(subscriptions, currencySymbol);
-    }
-  }, [subscriptions, billRemindersEnabled, reminderDaysBefore, currencySymbol, syncAllBillReminders]);
+    const loansList = Array.isArray(loansData) ? loansData : (loansData as any)?.loans || [];
+    syncAllBillReminders(subscriptions || [], loansList, currencySymbol);
+  }, [subscriptions, loansData, billRemindersEnabled, loanRemindersEnabled, reminderDaysBefore, currencySymbol, syncAllBillReminders]);
 
   // 2. Check budget limit thresholds whenever budgets update
   useEffect(() => {

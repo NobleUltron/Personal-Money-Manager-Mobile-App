@@ -1,9 +1,7 @@
-import { LogBox, Platform } from 'react-native';
-LogBox.ignoreLogs(['expo-notifications: Android Push notifications']);
+import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 
-
-// Configure notification behavior when app is in foreground
+// Configure foreground notification presentation options
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -15,7 +13,7 @@ Notifications.setNotificationHandler({
 });
 
 export interface NotificationPayload extends Record<string, unknown> {
-  type: 'bill_due' | 'budget_warning' | 'daily_digest' | 'loan_due' | 'test';
+  type: 'bill_due' | 'loan_due' | 'budget_warning' | 'daily_digest' | 'weekly_digest' | 'test' | 'general';
   id?: string;
   url?: string;
   metadata?: any;
@@ -41,13 +39,21 @@ export class NotificationService {
         return false;
       }
 
-      // Configure Android channel
+      // Configure Android channels
       if (Platform.OS === 'android') {
         await Notifications.setNotificationChannelAsync('money-manager-alerts', {
           name: 'Personal Money Manager Alerts',
           importance: Notifications.AndroidImportance.HIGH,
           vibrationPattern: [0, 250, 250, 250],
           lightColor: '#6366F1',
+          sound: 'default',
+        });
+
+        await Notifications.setNotificationChannelAsync('money-manager-digests', {
+          name: 'Daily & Weekly Digests',
+          importance: Notifications.AndroidImportance.DEFAULT,
+          vibrationPattern: [0, 150, 150, 150],
+          lightColor: '#10B981',
           sound: 'default',
         });
       }
@@ -81,10 +87,8 @@ export class NotificationService {
       triggerDate.setDate(triggerDate.getDate() - daysBefore);
       triggerDate.setHours(9, 0, 0, 0);
 
-      // If trigger date has already passed, schedule for today 9am or immediately
       const now = new Date();
       if (triggerDate.getTime() <= now.getTime()) {
-        // If due date is today, alert today
         if (due.toDateString() === now.toDateString()) {
           triggerDate.setTime(now.getTime() + 5000); // 5 seconds from now
         } else {
@@ -123,6 +127,73 @@ export class NotificationService {
       return identifier;
     } catch (err) {
       console.warn('Failed to schedule bill reminder:', err);
+      return null;
+    }
+  }
+
+  /**
+   * Schedule a reminder for an upcoming Loan repayment deadline
+   */
+  static async scheduleLoanReminder(params: {
+    loanId: string;
+    counterparty: string;
+    type: 'lent' | 'borrowed';
+    amount: number;
+    currencySymbol: string;
+    dueDate: Date | string;
+    daysBefore?: number;
+  }): Promise<string | null> {
+    if (Platform.OS === 'web') return null;
+
+    try {
+      const due = typeof params.dueDate === 'string' ? new Date(params.dueDate) : params.dueDate;
+      const daysBefore = params.daysBefore ?? 1;
+
+      const triggerDate = new Date(due);
+      triggerDate.setDate(triggerDate.getDate() - daysBefore);
+      triggerDate.setHours(9, 30, 0, 0);
+
+      const now = new Date();
+      if (triggerDate.getTime() <= now.getTime()) {
+        if (due.toDateString() === now.toDateString()) {
+          triggerDate.setTime(now.getTime() + 6000);
+        } else {
+          return null;
+        }
+      }
+
+      const formattedAmount = `${params.currencySymbol} ${params.amount.toLocaleString()}`;
+      const isLent = params.type === 'lent';
+      const title = isLent
+        ? `💰 Collection Due: ${params.counterparty}`
+        : `💳 Loan Repayment Due: ${params.counterparty}`;
+      const body = isLent
+        ? `${params.counterparty} is scheduled to repay ${formattedAmount} ${daysBefore === 0 ? 'today' : `in ${daysBefore} days`}.`
+        : `Repayment of ${formattedAmount} to ${params.counterparty} is due ${daysBefore === 0 ? 'today' : `in ${daysBefore} days`}.`;
+
+      const dataPayload: NotificationPayload = {
+        type: 'loan_due',
+        id: params.loanId,
+        url: '/(app)/loans',
+      };
+
+      const identifier = await Notifications.scheduleNotificationAsync({
+        content: {
+          title,
+          body,
+          data: dataPayload,
+          sound: 'default',
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DATE,
+          date: triggerDate,
+          channelId: 'money-manager-alerts',
+        },
+      });
+
+      return identifier;
+    } catch (err) {
+      console.warn('Failed to schedule loan reminder:', err);
       return null;
     }
   }
@@ -201,7 +272,7 @@ export class NotificationService {
           type: Notifications.SchedulableTriggerInputTypes.DAILY,
           hour,
           minute,
-          channelId: 'money-manager-alerts',
+          channelId: 'money-manager-digests',
         },
       });
 
@@ -213,9 +284,50 @@ export class NotificationService {
   }
 
   /**
-   * Send an instant test notification
+   * Schedule Weekly Spending Digest (e.g. Sunday 6:00 PM)
+   * weekday: 1 = Sunday, 2 = Monday, ..., 7 = Saturday (or 1=Mon depending on platform, handled uniformly)
    */
-    /**
+  static async scheduleWeeklyDigest(weekday = 1, hour = 18, minute = 0): Promise<string | null> {
+    if (Platform.OS === 'web') return null;
+
+    try {
+      // Cancel existing weekly digests
+      const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+      for (const n of scheduled) {
+        if (n.content.data?.type === 'weekly_digest') {
+          await Notifications.cancelScheduledNotificationAsync(n.identifier);
+        }
+      }
+
+      const dataPayload: NotificationPayload = {
+        type: 'weekly_digest',
+        url: '/(app)/analytics',
+      };
+
+      const identifier = await Notifications.scheduleNotificationAsync({
+        content: {
+          title: '📊 Your Weekly Financial Digest',
+          body: 'Your weekly spending debrief & upcoming bills report is ready to review!',
+          data: dataPayload,
+          sound: 'default',
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
+          weekday,
+          hour,
+          minute,
+          channelId: 'money-manager-digests',
+        },
+      });
+
+      return identifier;
+    } catch (err) {
+      console.warn('Failed to schedule weekly digest:', err);
+      return null;
+    }
+  }
+
+  /**
    * Send an instant custom alert
    */
   static async sendInstantNotification(params: {
@@ -243,22 +355,43 @@ export class NotificationService {
     }
   }
 
-  static async sendTestNotification(): Promise<string | null> {
+  /**
+   * Send test notification for a specific feature
+   */
+  static async sendTestNotification(type: 'general' | 'daily_digest' | 'weekly_digest' | 'bill_reminder' | 'budget_warning' = 'general'): Promise<string | null> {
     if (Platform.OS === 'web') return null;
 
     try {
-      const dataPayload: NotificationPayload = {
-        type: 'test',
-      };
+      let title = '🔔 Personal Money Manager';
+      let body = 'Smart Notifications & Bill Reminders are actively protecting your financial health!';
+      let url = '/(app)/settings';
+
+      if (type === 'daily_digest') {
+        title = '🌙 Daily Spending Summary';
+        body = 'You spent UGX 45,000 across 3 transactions today. Top category: Food & Dining.';
+        url = '/(app)/';
+      } else if (type === 'weekly_digest') {
+        title = '📊 Weekly Financial Debrief';
+        body = 'Great job! You spent 14% less this week. 2 recurring bills are due in the next 7 days.';
+        url = '/(app)/analytics';
+      } else if (type === 'bill_reminder') {
+        title = '🔔 Bill Due Tomorrow: Netflix Premium';
+        body = 'Your subscription payment for Netflix Premium (UGX 38,000) is due tomorrow.';
+        url = '/(app)/subscriptions';
+      } else if (type === 'budget_warning') {
+        title = '⚠️ Budget Warning: Shopping (85%)';
+        body = 'You have used 85% of your monthly Shopping budget (UGX 425,000 / 500,000).';
+        url = '/(app)/budgets';
+      }
 
       const identifier = await Notifications.scheduleNotificationAsync({
         content: {
-          title: '🔔 Personal Money Manager Alerts Active',
-          body: 'You will receive timely reminders for upcoming bills and budget spending warnings!',
-          data: dataPayload,
+          title,
+          body,
+          data: { type, url },
           sound: 'default',
         },
-        trigger: null, // instant
+        trigger: null,
       });
 
       return identifier;
@@ -278,4 +411,3 @@ export class NotificationService {
     } catch {}
   }
 }
-

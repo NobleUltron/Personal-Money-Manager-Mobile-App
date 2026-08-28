@@ -7,7 +7,7 @@ import { triggerHaptic } from '../utils/haptics';
 
 export interface InAppAlert {
   id: string;
-  type: 'bill_due' | 'budget_warning' | 'daily_digest' | 'general' | 'test';
+  type: 'bill_due' | 'loan_due' | 'budget_warning' | 'daily_digest' | 'weekly_digest' | 'general' | 'test';
   title: string;
   message: string;
   timestamp: number;
@@ -20,19 +20,27 @@ export interface InAppAlert {
 interface NotificationsContextType {
   hasPermission: boolean;
   billRemindersEnabled: boolean;
+  loanRemindersEnabled: boolean;
   budgetAlertsEnabled: boolean;
   dailyDigestEnabled: boolean;
+  dailyDigestHour: number;
+  weeklyDigestEnabled: boolean;
+  weeklyDigestDay: number;
   reminderDaysBefore: number;
   inAppAlerts: InAppAlert[];
   unreadCount: number;
   requestPermissions: () => Promise<boolean>;
   toggleBillReminders: (enabled: boolean) => Promise<void>;
+  toggleLoanReminders: (enabled: boolean) => Promise<void>;
   toggleBudgetAlerts: (enabled: boolean) => Promise<void>;
   toggleDailyDigest: (enabled: boolean) => Promise<void>;
+  setDailyDigestHour: (hour: number) => Promise<void>;
+  toggleWeeklyDigest: (enabled: boolean) => Promise<void>;
+  setWeeklyDigestDay: (day: number) => Promise<void>;
   setReminderDaysBefore: (days: number) => Promise<void>;
-  syncAllBillReminders: (subscriptions: any[], currencySymbol: string) => Promise<void>;
+  syncAllBillReminders: (subscriptions: any[], loansOrCurrency?: any[] | string, maybeCurrency?: string) => Promise<void>;
   checkAndNotifyBudgetLimits: (budgets: any[], currencySymbol: string) => Promise<void>;
-  sendTestNotification: () => Promise<boolean>;
+  sendTestNotification: (type?: 'general' | 'daily_digest' | 'weekly_digest' | 'bill_reminder' | 'budget_warning') => Promise<boolean>;
   markAlertAsRead: (id: string) => void;
   markAllAlertsAsRead: () => void;
   dismissAlert: (id: string) => void;
@@ -42,15 +50,23 @@ interface NotificationsContextType {
 const NotificationsContext = createContext<NotificationsContextType>({
   hasPermission: false,
   billRemindersEnabled: true,
+  loanRemindersEnabled: true,
   budgetAlertsEnabled: true,
   dailyDigestEnabled: false,
+  dailyDigestHour: 20,
+  weeklyDigestEnabled: true,
+  weeklyDigestDay: 1,
   reminderDaysBefore: 1,
   inAppAlerts: [],
   unreadCount: 0,
   requestPermissions: async () => false,
   toggleBillReminders: async () => {},
+  toggleLoanReminders: async () => {},
   toggleBudgetAlerts: async () => {},
   toggleDailyDigest: async () => {},
+  setDailyDigestHour: async () => {},
+  toggleWeeklyDigest: async () => {},
+  setWeeklyDigestDay: async () => {},
   setReminderDaysBefore: async () => {},
   syncAllBillReminders: async () => {},
   checkAndNotifyBudgetLimits: async () => {},
@@ -62,30 +78,42 @@ const NotificationsContext = createContext<NotificationsContextType>({
 });
 
 const BILL_REMINDERS_KEY = 'pmm_notif_bill_reminders';
+const LOAN_REMINDERS_KEY = 'pmm_notif_loan_reminders';
 const BUDGET_ALERTS_KEY = 'pmm_notif_budget_alerts';
 const DAILY_DIGEST_KEY = 'pmm_notif_daily_digest';
+const DAILY_DIGEST_HOUR_KEY = 'pmm_notif_daily_digest_hour';
+const WEEKLY_DIGEST_KEY = 'pmm_notif_weekly_digest';
+const WEEKLY_DIGEST_DAY_KEY = 'pmm_notif_weekly_digest_day';
 const DAYS_BEFORE_KEY = 'pmm_notif_days_before';
 const IN_APP_ALERTS_KEY = 'pmm_in_app_alerts_v1';
 const DEDUP_TRACKER_KEY = 'pmm_notif_dedup_tracker_v1';
 
 export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [hasPermission, setHasPermission] = useState<boolean>(false);
-  const [billRemindersEnabled, setBillRemindersEnabled] = useState<boolean>(true);
-  const [budgetAlertsEnabled, setBudgetAlertsEnabled] = useState<boolean>(true);
-  const [dailyDigestEnabled, setDailyDigestEnabled] = useState<boolean>(false);
-  const [reminderDaysBefore, setReminderDaysBeforeState] = useState<number>(1);
+  const [hasPermission, setHasPermission] = useState(false);
+  const [billRemindersEnabled, setBillRemindersEnabled] = useState(true);
+  const [loanRemindersEnabled, setLoanRemindersEnabled] = useState(true);
+  const [budgetAlertsEnabled, setBudgetAlertsEnabled] = useState(true);
+  const [dailyDigestEnabled, setDailyDigestEnabled] = useState(false);
+  const [dailyDigestHour, setDailyDigestHourState] = useState(20);
+  const [weeklyDigestEnabled, setWeeklyDigestEnabled] = useState(true);
+  const [weeklyDigestDay, setWeeklyDigestDayState] = useState(1); // 1 = Sunday
+  const [reminderDaysBefore, setReminderDaysBeforeState] = useState(1);
   const [inAppAlerts, setInAppAlerts] = useState<InAppAlert[]>([]);
 
-  const notificationListener = useRef<Notifications.EventSubscription | null>(null);
-  const responseListener = useRef<Notifications.EventSubscription | null>(null);
+  const notificationListener = useRef<Notifications.Subscription | null>(null);
+  const responseListener = useRef<Notifications.Subscription | null>(null);
 
   useEffect(() => {
     loadSettings();
     setupListeners();
 
     return () => {
-      if (notificationListener.current) notificationListener.current.remove();
-      if (responseListener.current) responseListener.current.remove();
+      if (notificationListener.current) {
+        notificationListener.current.remove();
+      }
+      if (responseListener.current) {
+        responseListener.current.remove();
+      }
     };
   }, []);
 
@@ -99,11 +127,23 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
       const storedBills = await SecureStore.getItemAsync(BILL_REMINDERS_KEY);
       if (storedBills !== null) setBillRemindersEnabled(storedBills === 'true');
 
+      const storedLoans = await SecureStore.getItemAsync(LOAN_REMINDERS_KEY);
+      if (storedLoans !== null) setLoanRemindersEnabled(storedLoans === 'true');
+
       const storedBudgets = await SecureStore.getItemAsync(BUDGET_ALERTS_KEY);
       if (storedBudgets !== null) setBudgetAlertsEnabled(storedBudgets === 'true');
 
-      const storedDigest = await SecureStore.getItemAsync(DAILY_DIGEST_KEY);
-      if (storedDigest !== null) setDailyDigestEnabled(storedDigest === 'true');
+      const storedDaily = await SecureStore.getItemAsync(DAILY_DIGEST_KEY);
+      if (storedDaily !== null) setDailyDigestEnabled(storedDaily === 'true');
+
+      const storedDailyHour = await SecureStore.getItemAsync(DAILY_DIGEST_HOUR_KEY);
+      if (storedDailyHour !== null) setDailyDigestHourState(parseInt(storedDailyHour, 10) || 20);
+
+      const storedWeekly = await SecureStore.getItemAsync(WEEKLY_DIGEST_KEY);
+      if (storedWeekly !== null) setWeeklyDigestEnabled(storedWeekly === 'true');
+
+      const storedWeeklyDay = await SecureStore.getItemAsync(WEEKLY_DIGEST_DAY_KEY);
+      if (storedWeeklyDay !== null) setWeeklyDigestDayState(parseInt(storedWeeklyDay, 10) || 1);
 
       const storedDays = await SecureStore.getItemAsync(DAYS_BEFORE_KEY);
       if (storedDays !== null) setReminderDaysBeforeState(parseInt(storedDays, 10) || 1);
@@ -137,14 +177,18 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
         actionTitle:
           notifData?.type === 'bill_due'
             ? 'Pay Bill'
+            : notifData?.type === 'loan_due'
+            ? 'View Loan'
             : notifData?.type === 'budget_warning'
             ? 'View Budget'
+            : notifData?.type === 'weekly_digest' || notifData?.type === 'daily_digest'
+            ? 'Open Debrief'
             : undefined,
         metadata: notifData?.metadata,
       };
 
       setInAppAlerts((prev) => {
-        const updated = [newAlert, ...prev.slice(0, 29)]; // keep latest 30
+        const updated = [newAlert, ...prev.slice(0, 49)]; // keep latest 50
         saveInAppAlerts(updated);
         return updated;
       });
@@ -174,6 +218,16 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
     } catch {}
   };
 
+  const toggleLoanReminders = async (enabled: boolean) => {
+    setLoanRemindersEnabled(enabled);
+    try {
+      await SecureStore.setItemAsync(LOAN_REMINDERS_KEY, enabled ? 'true' : 'false');
+      if (enabled && !hasPermission) {
+        await requestPermissions();
+      }
+    } catch {}
+  };
+
   const toggleBudgetAlerts = async (enabled: boolean) => {
     setBudgetAlertsEnabled(enabled);
     try {
@@ -190,7 +244,7 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
       await SecureStore.setItemAsync(DAILY_DIGEST_KEY, enabled ? 'true' : 'false');
       if (enabled) {
         if (!hasPermission) await requestPermissions();
-        await NotificationService.scheduleDailySpendingDigest(20, 0);
+        await NotificationService.scheduleDailySpendingDigest(dailyDigestHour, 0);
       } else {
         const scheduled = await Notifications.getAllScheduledNotificationsAsync();
         for (const n of scheduled) {
@@ -198,6 +252,44 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
             await Notifications.cancelScheduledNotificationAsync(n.identifier);
           }
         }
+      }
+    } catch {}
+  };
+
+  const setDailyDigestHour = async (hour: number) => {
+    setDailyDigestHourState(hour);
+    try {
+      await SecureStore.setItemAsync(DAILY_DIGEST_HOUR_KEY, hour.toString());
+      if (dailyDigestEnabled) {
+        await NotificationService.scheduleDailySpendingDigest(hour, 0);
+      }
+    } catch {}
+  };
+
+  const toggleWeeklyDigest = async (enabled: boolean) => {
+    setWeeklyDigestEnabled(enabled);
+    try {
+      await SecureStore.setItemAsync(WEEKLY_DIGEST_KEY, enabled ? 'true' : 'false');
+      if (enabled) {
+        if (!hasPermission) await requestPermissions();
+        await NotificationService.scheduleWeeklyDigest(weeklyDigestDay, 18, 0);
+      } else {
+        const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+        for (const n of scheduled) {
+          if (n.content.data?.type === 'weekly_digest') {
+            await Notifications.cancelScheduledNotificationAsync(n.identifier);
+          }
+        }
+      }
+    } catch {}
+  };
+
+  const setWeeklyDigestDay = async (day: number) => {
+    setWeeklyDigestDayState(day);
+    try {
+      await SecureStore.setItemAsync(WEEKLY_DIGEST_DAY_KEY, day.toString());
+      if (weeklyDigestEnabled) {
+        await NotificationService.scheduleWeeklyDigest(day, 18, 0);
       }
     } catch {}
   };
@@ -210,30 +302,63 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   /**
-   * Sync all recurring bills & subscriptions with deduplication
+   * Sync all recurring bills & subscriptions + loan deadlines with deduplication
    */
   const syncAllBillReminders = useCallback(
-    async (subscriptions: any[], currencySymbol: string) => {
-      if (!billRemindersEnabled || !subscriptions || subscriptions.length === 0) return;
-
+    async (subscriptions: any[] = [], loansOrCurrency?: any[] | string, maybeCurrency?: string) => {
       try {
-        for (const sub of subscriptions) {
-          if (sub.next_due_date) {
-            await NotificationService.scheduleBillReminder({
-              billId: sub.id ? sub.id.toString() : sub.name,
-              billName: sub.name,
-              amount: Number(sub.amount),
-              currencySymbol,
-              dueDate: sub.next_due_date,
-              daysBefore: reminderDaysBefore,
-            });
+        let loans: any[] = [];
+        let currencySymbol = 'UGX';
+
+        if (typeof loansOrCurrency === 'string') {
+          currencySymbol = loansOrCurrency;
+        } else if (Array.isArray(loansOrCurrency)) {
+          loans = loansOrCurrency;
+          if (typeof maybeCurrency === 'string') {
+            currencySymbol = maybeCurrency;
+          }
+        }
+
+        // 1. Sync Subscriptions / Bills
+        if (billRemindersEnabled && subscriptions && subscriptions.length > 0) {
+          for (const sub of subscriptions) {
+            if (sub.next_due_date) {
+              await NotificationService.scheduleBillReminder({
+                billId: sub.id ? sub.id.toString() : sub.name,
+                billName: sub.name,
+                amount: Number(sub.amount),
+                currencySymbol,
+                dueDate: sub.next_due_date,
+                daysBefore: reminderDaysBefore,
+              });
+            }
+          }
+        }
+
+        // 2. Sync Loans
+        if (loanRemindersEnabled && loans && loans.length > 0) {
+          for (const loan of loans) {
+            if (loan.due_date && loan.status !== 'paid' && loan.status !== 'settled') {
+              const remainingAmount = Number(loan.remaining_amount ?? loan.amount ?? 0);
+              if (remainingAmount > 0) {
+                await NotificationService.scheduleLoanReminder({
+                  loanId: loan.id ? loan.id.toString() : loan.counterparty,
+                  counterparty: loan.counterparty,
+                  type: loan.type === 'lent' ? 'lent' : 'borrowed',
+                  amount: remainingAmount,
+                  currencySymbol,
+                  dueDate: loan.due_date,
+                  daysBefore: reminderDaysBefore,
+                });
+              }
+            }
           }
         }
       } catch (err) {
-        console.warn('Failed to sync bill reminders:', err);
+        console.warn('Failed to sync bill & loan reminders:', err);
       }
     },
-    [billRemindersEnabled, reminderDaysBefore]
+    [billRemindersEnabled, loanRemindersEnabled, reminderDaysBefore]
   );
 
   /**
@@ -286,18 +411,13 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
     [budgetAlertsEnabled]
   );
 
-  const sendTestNotification = async (): Promise<boolean> => {
+  const sendTestNotification = async (type: 'general' | 'daily_digest' | 'weekly_digest' | 'bill_reminder' | 'budget_warning' = 'general'): Promise<boolean> => {
     if (!hasPermission) {
       const granted = await requestPermissions();
       if (!granted) return false;
     }
 
-    const id = await NotificationService.sendInstantNotification({
-      title: '🔔 Personal Money Manager',
-      body: 'Smart Notifications & Bill Reminders are actively protecting your financial health!',
-      data: { type: 'test', url: '/(app)/settings' },
-    });
-
+    const id = await NotificationService.sendTestNotification(type);
     return !!id;
   };
 
@@ -340,15 +460,23 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
       value={{
         hasPermission,
         billRemindersEnabled,
+        loanRemindersEnabled,
         budgetAlertsEnabled,
         dailyDigestEnabled,
+        dailyDigestHour,
+        weeklyDigestEnabled,
+        weeklyDigestDay,
         reminderDaysBefore,
         inAppAlerts,
         unreadCount,
         requestPermissions,
         toggleBillReminders,
+        toggleLoanReminders,
         toggleBudgetAlerts,
         toggleDailyDigest,
+        setDailyDigestHour,
+        toggleWeeklyDigest,
+        setWeeklyDigestDay,
         setReminderDaysBefore,
         syncAllBillReminders,
         checkAndNotifyBudgetLimits,

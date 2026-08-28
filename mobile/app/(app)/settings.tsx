@@ -50,6 +50,7 @@ import {
   Shield,
   Bell,
   Clock,
+  Calendar,
 } from 'lucide-react-native';
 import { useNotifications } from '../../context/NotificationsContext';
 import { useAuth } from '../../context/AuthContext';
@@ -123,16 +124,26 @@ export default function SettingsScreen() {
   const {
     hasPermission,
     billRemindersEnabled,
+    loanRemindersEnabled,
     budgetAlertsEnabled,
     dailyDigestEnabled,
+    dailyDigestHour,
+    weeklyDigestEnabled,
+    weeklyDigestDay,
     reminderDaysBefore,
     toggleBillReminders,
+    toggleLoanReminders,
     toggleBudgetAlerts,
     toggleDailyDigest,
+    setDailyDigestHour,
+    toggleWeeklyDigest,
+    setWeeklyDigestDay,
     setReminderDaysBefore,
     sendTestNotification,
   } = useNotifications();
   const [reminderDaysModalVisible, setReminderDaysModalVisible] = useState(false);
+  const [dailyDigestModalVisible, setDailyDigestModalVisible] = useState(false);
+  const [weeklyDigestModalVisible, setWeeklyDigestModalVisible] = useState(false);
   const [testNotifSuccess, setTestNotifSuccess] = useState(false);
   const [statementExportModalVisible, setStatementExportModalVisible] = useState(false);
 
@@ -855,8 +866,29 @@ export default function SettingsScreen() {
             />
           </View>
 
+          {/* Loan & Debt Reminders */}
+          <View style={[styles.menuItem, { borderBottomColor: colors.borderSubtle }]}>
+            <View style={[styles.menuIconBox, { backgroundColor: 'rgba(217, 70, 239, 0.15)' }]}>
+              <HandCoins size={18} color="#D946EF" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.menuText, { color: colors.text }]}>Loan Payment Reminders</Text>
+              <Text style={[styles.menuSubtext, { color: colors.textSecondary }]}>
+                Alerts for debt collection and repayment deadlines
+              </Text>
+            </View>
+            <Switch
+              value={loanRemindersEnabled}
+              onValueChange={async (val) => {
+                triggerHaptic.selection();
+                await toggleLoanReminders(val);
+              }}
+              trackColor={{ false: colors.border, true: '#D946EF' }}
+            />
+          </View>
+
           {/* Reminder Timing Selector */}
-          {billRemindersEnabled && (
+          {(billRemindersEnabled || loanRemindersEnabled) && (
             <TouchableOpacity
               activeOpacity={0.7}
               onPress={() => {
@@ -873,14 +905,12 @@ export default function SettingsScreen() {
                 <Text style={[styles.menuSubtext, { color: colors.textSecondary }]}>
                   {reminderDaysBefore === 0
                     ? 'On the due date at 9:00 AM'
-                    : reminderDaysBefore === 1
-                    ? '1 day before due date'
-                    : '2 days before due date'}
+                    : `${reminderDaysBefore} day${reminderDaysBefore === 1 ? '' : 's'} before due date`}
                 </Text>
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                 <Text style={[styles.valueText, { color: colors.primary }]}>
-                  {reminderDaysBefore === 0 ? 'Same Day' : `${reminderDaysBefore} day${reminderDaysBefore === 1 ? '' : 's'} prior`}
+                  {reminderDaysBefore === 0 ? 'Same Day' : `${reminderDaysBefore}d prior`}
                 </Text>
                 <ChevronRight size={16} color={colors.textMuted} />
               </View>
@@ -916,7 +946,7 @@ export default function SettingsScreen() {
             <View style={{ flex: 1 }}>
               <Text style={[styles.menuText, { color: colors.text }]}>Daily Evening Summary</Text>
               <Text style={[styles.menuSubtext, { color: colors.textSecondary }]}>
-                8:00 PM daily reminder to record today's spending
+                {dailyDigestHour}:00 PM daily reminder to record spending
               </Text>
             </View>
             <Switch
@@ -929,29 +959,126 @@ export default function SettingsScreen() {
             />
           </View>
 
-          {/* Send Test Notification Button */}
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={async () => {
-              const sent = await sendTestNotification();
-              if (sent) {
-                setTestNotifSuccess(true);
-                setTimeout(() => setTestNotifSuccess(false), 3000);
-              }
-            }}
-            style={[styles.menuItem, { borderBottomWidth: 0 }]}
-          >
-            <View style={[styles.menuIconBox, { backgroundColor: 'rgba(99, 102, 241, 0.15)' }]}>
-              <Bell size={18} color="#6366F1" />
+          {/* Daily Timing Picker */}
+          {dailyDigestEnabled && (
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => {
+                triggerHaptic.selection();
+                setDailyDigestModalVisible(true);
+              }}
+              style={[styles.menuItem, { borderBottomColor: colors.borderSubtle }]}
+            >
+              <View style={[styles.menuIconBox, { backgroundColor: 'rgba(59, 130, 246, 0.15)' }]}>
+                <Clock size={18} color="#3B82F6" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.menuText, { color: colors.text }]}>Daily Summary Time</Text>
+                <Text style={[styles.menuSubtext, { color: colors.textSecondary }]}>
+                  Trigger hour for evening recap
+                </Text>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <Text style={[styles.valueText, { color: colors.primary }]}>
+                  {dailyDigestHour > 12 ? `${dailyDigestHour - 12}:00 PM` : `${dailyDigestHour}:00 AM`}
+                </Text>
+                <ChevronRight size={16} color={colors.textMuted} />
+              </View>
+            </TouchableOpacity>
+          )}
+
+          {/* Weekly Financial Digest */}
+          <View style={[styles.menuItem, { borderBottomColor: colors.borderSubtle }]}>
+            <View style={[styles.menuIconBox, { backgroundColor: 'rgba(16, 185, 129, 0.15)' }]}>
+              <Sparkles size={18} color="#10B981" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.menuText, { color: colors.text }]}>Send Test Notification</Text>
-              <Text style={[styles.menuSubtext, { color: testNotifSuccess ? '#10B981' : colors.textSecondary }]}>
-                {testNotifSuccess ? 'Test notification sent successfully!' : 'Preview push notification appearance'}
+              <Text style={[styles.menuText, { color: colors.text }]}>Weekly Financial Digest</Text>
+              <Text style={[styles.menuSubtext, { color: colors.textSecondary }]}>
+                Weekly spending debrief & 7-day bill forecast
               </Text>
             </View>
-            <ChevronRight size={18} color={colors.textMuted} />
-          </TouchableOpacity>
+            <Switch
+              value={weeklyDigestEnabled}
+              onValueChange={async (val) => {
+                triggerHaptic.selection();
+                await toggleWeeklyDigest(val);
+              }}
+              trackColor={{ false: colors.border, true: '#10B981' }}
+            />
+          </View>
+
+          {/* Weekly Timing Picker */}
+          {weeklyDigestEnabled && (
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => {
+                triggerHaptic.selection();
+                setWeeklyDigestModalVisible(true);
+              }}
+              style={[styles.menuItem, { borderBottomColor: colors.borderSubtle }]}
+            >
+              <View style={[styles.menuIconBox, { backgroundColor: 'rgba(16, 185, 129, 0.15)' }]}>
+                <Calendar size={18} color="#10B981" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.menuText, { color: colors.text }]}>Weekly Digest Day</Text>
+                <Text style={[styles.menuSubtext, { color: colors.textSecondary }]}>
+                  When your weekly financial report arrives
+                </Text>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <Text style={[styles.valueText, { color: colors.primary }]}>
+                  {weeklyDigestDay === 1 ? 'Sunday 6 PM' : weeklyDigestDay === 2 ? 'Monday 8 AM' : 'Friday 6 PM'}
+                </Text>
+                <ChevronRight size={16} color={colors.textMuted} />
+              </View>
+            </TouchableOpacity>
+          )}
+
+          {/* Test Notification Triggers */}
+          <View style={[styles.menuItem, { borderBottomWidth: 0, flexDirection: 'column', alignItems: 'flex-start', paddingVertical: Spacing.md }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+              <Bell size={16} color={colors.primary} />
+              <Text style={[styles.menuText, { color: colors.text, fontSize: 13 }]}>Test Push Notification Channels</Text>
+            </View>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, width: '100%' }}>
+              {[
+                { type: 'daily_digest', label: '🌙 Daily Digest' },
+                { type: 'weekly_digest', label: '📊 Weekly Digest' },
+                { type: 'bill_reminder', label: '🔔 Bill Due' },
+                { type: 'budget_warning', label: '⚠️ Budget Alert' },
+              ].map((testBtn) => (
+                <TouchableOpacity
+                  key={testBtn.type}
+                  activeOpacity={0.7}
+                  onPress={async () => {
+                    triggerHaptic.selection();
+                    const sent = await sendTestNotification(testBtn.type as any);
+                    if (sent) {
+                      setTestNotifSuccess(true);
+                      setTimeout(() => setTestNotifSuccess(false), 3000);
+                    }
+                  }}
+                  style={{
+                    backgroundColor: colors.surfaceElevated,
+                    paddingHorizontal: 10,
+                    paddingVertical: 6,
+                    borderRadius: Radius.full,
+                    borderWidth: 1,
+                    borderColor: colors.borderSubtle,
+                  }}
+                >
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: colors.text }}>{testBtn.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            {testNotifSuccess && (
+              <Text style={{ fontSize: 11, color: '#10B981', fontWeight: '700', marginTop: 8 }}>
+                ✓ Test notification delivered to your device!
+              </Text>
+            )}
+          </View>
         </Card>
 
         {/* 5. Preferences */}
@@ -1315,20 +1442,22 @@ export default function SettingsScreen() {
         onSelectAvatar={handleUpdateAvatar}
       />
 
-      {/* MODAL: Bill Reminder Timing Picker */}
+      {/* MODAL: Bill & Loan Reminder Timing Picker */}
       <Modal
         visible={reminderDaysModalVisible}
         onClose={() => setReminderDaysModalVisible(false)}
-        title="Reminder Timing"
+        title="Reminder Advance Window"
       >
         <Text style={[styles.menuSubtext, { color: colors.textSecondary, marginBottom: Spacing.md }]}>
-          When would you like to receive bill due date reminders?
+          When would you like to receive bill & loan due date alerts?
         </Text>
         <View style={{ gap: 8 }}>
           {[
             { days: 0, label: 'On the Due Date', sub: '9:00 AM morning reminder on payment day' },
             { days: 1, label: '1 Day Before', sub: 'Advance notification the day before due date' },
-            { days: 2, label: '2 Days Before', sub: 'Extra preparation window for large recurring bills' },
+            { days: 2, label: '2 Days Before', sub: 'Early preparation window for upcoming bills' },
+            { days: 3, label: '3 Days Before', sub: '3-day advance notice for cash planning' },
+            { days: 7, label: '7 Days Before (1 Week)', sub: 'Full week advance notice for major loan repayments' },
           ].map((item) => {
             const isSelected = reminderDaysBefore === item.days;
             return (
@@ -1339,6 +1468,112 @@ export default function SettingsScreen() {
                   triggerHaptic.selection();
                   await setReminderDaysBefore(item.days);
                   setReminderDaysModalVisible(false);
+                }}
+                style={[
+                  styles.currencyRowItem,
+                  {
+                    backgroundColor: isSelected ? colors.primaryLight : colors.surfaceElevated,
+                    borderColor: isSelected ? colors.primary : colors.border,
+                  },
+                ]}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.currencyCodeText, { color: colors.text, fontSize: 14 }]}>
+                    {item.label}
+                  </Text>
+                  <Text style={[styles.currencyNameText, { color: colors.textSecondary }]}>
+                    {item.sub}
+                  </Text>
+                </View>
+                {isSelected && (
+                  <View style={[styles.checkCircle, { backgroundColor: colors.primary }]}>
+                    <Check size={13} color="#FFFFFF" strokeWidth={3} />
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </Modal>
+
+      {/* MODAL: Daily Digest Hour Picker */}
+      <Modal
+        visible={dailyDigestModalVisible}
+        onClose={() => setDailyDigestModalVisible(false)}
+        title="Daily Summary Time"
+      >
+        <Text style={[styles.menuSubtext, { color: colors.textSecondary, marginBottom: Spacing.md }]}>
+          Choose what time you would like your daily spending debrief:
+        </Text>
+        <View style={{ gap: 8 }}>
+          {[
+            { hour: 18, label: '6:00 PM', sub: 'End of workday recap' },
+            { hour: 19, label: '7:00 PM', sub: 'Early evening debrief' },
+            { hour: 20, label: '8:00 PM', sub: 'Standard evening summary (Recommended)' },
+            { hour: 21, label: '9:00 PM', sub: 'Nightly spending review' },
+            { hour: 22, label: '10:00 PM', sub: 'End-of-day final recap' },
+          ].map((item) => {
+            const isSelected = dailyDigestHour === item.hour;
+            return (
+              <TouchableOpacity
+                key={item.hour}
+                activeOpacity={0.75}
+                onPress={async () => {
+                  triggerHaptic.selection();
+                  await setDailyDigestHour(item.hour);
+                  setDailyDigestModalVisible(false);
+                }}
+                style={[
+                  styles.currencyRowItem,
+                  {
+                    backgroundColor: isSelected ? colors.primaryLight : colors.surfaceElevated,
+                    borderColor: isSelected ? colors.primary : colors.border,
+                  },
+                ]}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.currencyCodeText, { color: colors.text, fontSize: 14 }]}>
+                    {item.label}
+                  </Text>
+                  <Text style={[styles.currencyNameText, { color: colors.textSecondary }]}>
+                    {item.sub}
+                  </Text>
+                </View>
+                {isSelected && (
+                  <View style={[styles.checkCircle, { backgroundColor: colors.primary }]}>
+                    <Check size={13} color="#FFFFFF" strokeWidth={3} />
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </Modal>
+
+      {/* MODAL: Weekly Digest Day Picker */}
+      <Modal
+        visible={weeklyDigestModalVisible}
+        onClose={() => setWeeklyDigestModalVisible(false)}
+        title="Weekly Digest Timing"
+      >
+        <Text style={[styles.menuSubtext, { color: colors.textSecondary, marginBottom: Spacing.md }]}>
+          Select when your weekly financial report should arrive:
+        </Text>
+        <View style={{ gap: 8 }}>
+          {[
+            { day: 1, label: 'Sunday at 6:00 PM', sub: 'End-of-week debrief & prep for coming week' },
+            { day: 2, label: 'Monday at 8:00 AM', sub: 'Start-of-week financial gameplan & upcoming bills' },
+            { day: 6, label: 'Friday at 6:00 PM', sub: 'Weekend financial status report' },
+          ].map((item) => {
+            const isSelected = weeklyDigestDay === item.day;
+            return (
+              <TouchableOpacity
+                key={item.day}
+                activeOpacity={0.75}
+                onPress={async () => {
+                  triggerHaptic.selection();
+                  await setWeeklyDigestDay(item.day);
+                  setWeeklyDigestModalVisible(false);
                 }}
                 style={[
                   styles.currencyRowItem,
