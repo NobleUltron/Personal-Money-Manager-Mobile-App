@@ -196,8 +196,8 @@ export default function AnalyticsScreen() {
                 style={[
                   styles.periodTab,
                   {
-                    backgroundColor: isSelected ? colors.primary : colors.surfaceElevated,
-                    borderColor: isSelected ? colors.primary : colors.border,
+                    backgroundColor: isSelected ? colors.primary : (isDark ? '#0F172A' : colors.surfaceElevated),
+                    borderColor: isSelected ? colors.primary : (isDark ? '#1E293B' : colors.border),
                   },
                 ]}
               >
@@ -218,7 +218,7 @@ export default function AnalyticsScreen() {
             {/* 2. Executive 4-Stat Pulse Grid */}
             <View style={styles.statGrid}>
               {/* Total Spending */}
-              <View style={[styles.statBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <View style={[styles.statBox, { backgroundColor: isDark ? '#0F172A' : '#FFFFFF', borderColor: isDark ? '#1E293B' : '#E2E8F0', borderWidth: 1.2 }]}>
                 <View style={styles.statHeaderRow}>
                   <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Total Outflow</Text>
                   <View
@@ -242,7 +242,7 @@ export default function AnalyticsScreen() {
               </View>
 
               {/* Total Income */}
-              <View style={[styles.statBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <View style={[styles.statBox, { backgroundColor: isDark ? '#0F172A' : '#FFFFFF', borderColor: isDark ? '#1E293B' : '#E2E8F0', borderWidth: 1.2 }]}>
                 <View style={styles.statHeaderRow}>
                   <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Total Inflow</Text>
                   <View style={[styles.microTag, { backgroundColor: 'rgba(16, 185, 129, 0.15)' }]}>
@@ -259,7 +259,7 @@ export default function AnalyticsScreen() {
               </View>
 
               {/* Net Cash Flow */}
-              <View style={[styles.statBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <View style={[styles.statBox, { backgroundColor: isDark ? '#0F172A' : '#FFFFFF', borderColor: isDark ? '#1E293B' : '#E2E8F0', borderWidth: 1.2 }]}>
                 <View style={styles.statHeaderRow}>
                   <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Net Cash Flow</Text>
                   <View
@@ -286,7 +286,7 @@ export default function AnalyticsScreen() {
               </View>
 
               {/* Daily Average Burn */}
-              <View style={[styles.statBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <View style={[styles.statBox, { backgroundColor: isDark ? '#0F172A' : '#FFFFFF', borderColor: isDark ? '#1E293B' : '#E2E8F0', borderWidth: 1.2 }]}>
                 <View style={styles.statHeaderRow}>
                   <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Daily Average</Text>
                   <View style={[styles.microTag, { backgroundColor: 'rgba(99, 102, 241, 0.15)' }]}>
@@ -304,7 +304,7 @@ export default function AnalyticsScreen() {
             </View>
 
             {/* 3. Smooth SVG Spending Velocity Curve Chart */}
-            <Card style={styles.chartCard}>
+            <Card style={[styles.chartCard, { backgroundColor: isDark ? '#0F172A' : '#FFFFFF', borderColor: isDark ? '#1E293B' : '#E2E8F0', borderWidth: 1.2 }]}>
               <View style={styles.chartHeader}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                   <View style={[styles.iconCircle, { backgroundColor: 'rgba(239, 68, 68, 0.15)' }]}>
@@ -328,7 +328,7 @@ export default function AnalyticsScreen() {
 
             {/* 4. 6-Month Cash Flow Dual-Bar Inflow vs Outflow */}
             {data?.monthlyCashflowTrend && data.monthlyCashflowTrend.length > 0 && (
-              <Card style={styles.chartCard}>
+              <Card style={[styles.chartCard, { backgroundColor: isDark ? '#0F172A' : '#FFFFFF', borderColor: isDark ? '#1E293B' : '#E2E8F0', borderWidth: 1.2 }]}>
                 <View style={styles.chartHeader}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                     <View style={[styles.iconCircle, { backgroundColor: 'rgba(16, 185, 129, 0.15)' }]}>
@@ -352,7 +352,7 @@ export default function AnalyticsScreen() {
 
             {/* 5. Category Spending Breakdown with Interactive Donut */}
             {data?.categoryBreakdown && data.categoryBreakdown.length > 0 && (
-              <Card style={styles.chartCard}>
+              <Card style={[styles.chartCard, { backgroundColor: isDark ? '#0F172A' : '#FFFFFF', borderColor: isDark ? '#1E293B' : '#E2E8F0', borderWidth: 1.2 }]}>
                 <View style={styles.chartHeader}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                     <View style={[styles.iconCircle, { backgroundColor: 'rgba(99, 102, 241, 0.15)' }]}>
@@ -430,7 +430,7 @@ export default function AnalyticsScreen() {
 
             {/* 7. Top Spending Destinations / Merchants */}
             {data?.topMerchants && data.topMerchants.length > 0 && (
-              <Card style={styles.chartCard}>
+              <Card style={[styles.chartCard, { backgroundColor: isDark ? '#0F172A' : '#FFFFFF', borderColor: isDark ? '#1E293B' : '#E2E8F0', borderWidth: 1.2 }]}>
                 <View style={styles.chartHeader}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                     <View style={[styles.iconCircle, { backgroundColor: 'rgba(59, 130, 246, 0.15)' }]}>
@@ -506,7 +506,7 @@ export default function AnalyticsScreen() {
             )}
 
             {/* 8. Cash Runway & Burn Rate Forecast Card */}
-            <Card style={styles.chartCard}>
+            <Card style={[styles.chartCard, { backgroundColor: isDark ? '#0B0F19' : '#FFFFFF', borderColor: isDark ? 'rgba(16, 185, 129, 0.3)' : '#E2E8F0', borderWidth: 1.2 }]}>
               <View style={styles.chartHeader}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                   <View style={[styles.iconCircle, { backgroundColor: 'rgba(16, 185, 129, 0.15)' }]}>
