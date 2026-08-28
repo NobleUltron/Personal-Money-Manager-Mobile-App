@@ -186,5 +186,6 @@ const styles = StyleSheet.create({
   text: {
     fontWeight: '700',
     letterSpacing: 0.2,
+    textAlign: 'center',
   },
 });

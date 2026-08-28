@@ -251,7 +251,7 @@ export default function RegisterScreen() {
             </View>
 
             <Button
-              title="Create Account & Initialize Vault"
+              title="Create Account"
               size="lg"
               variant="primary"
               loading={loading}
