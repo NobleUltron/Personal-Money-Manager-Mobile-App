@@ -176,7 +176,7 @@ export default function CurrencyConverterScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
       <LinearGradient
-        colors={Gradients.primary as any}
+        colors={['#4F46E5', '#3730A3', '#1E1B4B']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.header}
@@ -229,14 +229,13 @@ export default function CurrencyConverterScreen() {
           <View
             style={[
               styles.converterCard,
-              { backgroundColor: colors.surface, borderColor: colors.border },
+              { backgroundColor: isDark ? '#0F172A' : '#FFFFFF', borderColor: isDark ? '#1E293B' : '#E2E8F0', borderWidth: 1.2 },
             ]}
           >
             {/* FROM BLOCK */}
             <View
               style={[
-                styles.currencyBlock,
-                { backgroundColor: colors.surfaceElevated, borderColor: colors.border },
+                styles.currencyBlock, { backgroundColor: isDark ? '#0B0F19' : colors.surfaceElevated, borderColor: isDark ? '#1E293B' : colors.borderSubtle },
               ]}
             >
               <TouchableOpacity
@@ -293,8 +292,7 @@ export default function CurrencyConverterScreen() {
             {/* TO BLOCK */}
             <View
               style={[
-                styles.currencyBlock,
-                { backgroundColor: colors.surfaceElevated, borderColor: colors.border },
+                styles.currencyBlock, { backgroundColor: isDark ? '#0B0F19' : colors.surfaceElevated, borderColor: isDark ? '#1E293B' : colors.borderSubtle },
               ]}
             >
               <TouchableOpacity
@@ -374,9 +372,9 @@ export default function CurrencyConverterScreen() {
                     styles.quickChip,
                     {
                       backgroundColor:
-                        numericInput === amt ? colors.primary : colors.surfaceElevated,
+                        numericInput === amt ? colors.primary : (isDark ? '#0F172A' : colors.surfaceElevated),
                       borderColor:
-                        numericInput === amt ? colors.primary : colors.border,
+                        numericInput === amt ? colors.primary : (isDark ? '#1E293B' : colors.borderSubtle),
                     },
                   ]}
                 >
@@ -405,7 +403,7 @@ export default function CurrencyConverterScreen() {
             <View
               style={[
                 styles.gridContainer,
-                { backgroundColor: colors.surface, borderColor: colors.border },
+                { backgroundColor: isDark ? '#0F172A' : '#FFFFFF', borderColor: isDark ? '#1E293B' : '#E2E8F0', borderWidth: 1.2 },
               ]}
             >
               {quickRates.map((item, idx) => (
@@ -419,8 +417,8 @@ export default function CurrencyConverterScreen() {
                   style={[
                     styles.gridItem,
                     {
-                      borderBottomColor: colors.border,
-                      borderRightColor: colors.border,
+                      borderBottomColor: isDark ? '#1E293B' : colors.border,
+                      borderRightColor: isDark ? '#1E293B' : colors.border,
                       borderBottomWidth: idx < quickRates.length - 2 ? 1 : 0,
                       borderRightWidth: idx % 2 === 0 ? 1 : 0,
                     },
@@ -545,7 +543,7 @@ export default function CurrencyConverterScreen() {
             <View
               style={[
                 styles.pickerHeader,
-                { borderBottomColor: colors.border },
+                { borderBottomColor: isDark ? '#1E293B' : colors.border },
               ]}
             >
               <Text style={[styles.pickerTitle, { color: colors.text }]}>
@@ -607,7 +605,7 @@ export default function CurrencyConverterScreen() {
                             ? "rgba(99,102,241,0.2)"
                             : "rgba(99,102,241,0.08)"
                           : "transparent",
-                        borderBottomColor: colors.border,
+                        borderBottomColor: isDark ? '#1E293B' : colors.border,
                       },
                     ]}
                     activeOpacity={0.7}
