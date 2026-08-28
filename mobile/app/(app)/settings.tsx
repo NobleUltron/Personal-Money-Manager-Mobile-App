@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Alert,
   Image,
@@ -146,6 +146,16 @@ export default function SettingsScreen() {
   const [weeklyDigestModalVisible, setWeeklyDigestModalVisible] = useState(false);
   const [testNotifSuccess, setTestNotifSuccess] = useState(false);
   const [statementExportModalVisible, setStatementExportModalVisible] = useState(false);
+
+  // Security Score Calculation
+  const securityScore = useMemo(() => {
+    let score = 0;
+    if (isBiometricsEnabled) score += 25;
+    if (hasCustomPin) score += 25;
+    if (user?.two_factor_enabled) score += 25;
+    if (isPrivacyShieldEnabled || hideBalances) score += 25;
+    return score;
+  }, [isBiometricsEnabled, hasCustomPin, user?.two_factor_enabled, isPrivacyShieldEnabled, hideBalances]);
 
   // PIN & Security State
   const [pinModalVisible, setPinModalVisible] = useState(false);
@@ -440,7 +450,7 @@ export default function SettingsScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* 1. Profile Hero Card */}
         <LinearGradient
-          colors={isDark ? ['#1E1B4B', '#0F172A'] : ['#EEF2FF', '#FFFFFF']}
+          colors={isDark ? ['#0B0F19', '#030712'] : ['#F8FAFC', '#FFFFFF']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={[styles.profileHeroCard, { borderColor: colors.border }]}
@@ -612,6 +622,32 @@ export default function SettingsScreen() {
 
         {/* 3. Security & Biometrics */}
         <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Security & Privacy Shield</Text>
+        {/* Security Health Score Banner */}
+        <View style={[styles.securityScoreCard, { backgroundColor: isDark ? '#0F172A' : '#FFFFFF', borderColor: isDark ? (securityScore === 100 ? 'rgba(16, 185, 129, 0.3)' : '#1E293B') : colors.borderSubtle }]}>
+          <View style={styles.securityScoreHeader}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <View style={[styles.securityScoreIconBox, { backgroundColor: securityScore === 100 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(99, 102, 241, 0.15)' }]}>
+                <ShieldCheck size={16} color={securityScore === 100 ? '#10B981' : colors.primary} />
+              </View>
+              <View>
+                <Text style={[styles.securityScoreTitle, { color: colors.text }]}>Vault Protection</Text>
+                <Text style={[styles.securityScoreSub, { color: colors.textSecondary }]}>
+                  {securityScore === 100 ? 'Fully Armed & Protected' : `${securityScore}% Security Score`}
+                </Text>
+              </View>
+            </View>
+            <View style={[styles.scoreBadgePill, { backgroundColor: securityScore === 100 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(99, 102, 241, 0.15)' }]}>
+              <Text style={[styles.scoreBadgeText, { color: securityScore === 100 ? '#10B981' : colors.primary }]}>
+                {securityScore}%
+              </Text>
+            </View>
+          </View>
+
+          {/* Segmented Security Bar */}
+          <View style={[styles.securityMeterBg, { backgroundColor: isDark ? '#1E293B' : '#E2E8F0' }]}>
+            <View style={[styles.securityMeterFill, { width: `${securityScore}%`, backgroundColor: securityScore === 100 ? '#10B981' : '#6366F1' }]} />
+          </View>
+        </View>
         <Card style={styles.menuCard}>
           {/* Biometric App Lock */}
           <View style={[styles.menuItem, { borderBottomColor: colors.borderSubtle }]}>
@@ -2014,13 +2050,104 @@ const styles = StyleSheet.create({
     fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
     textAlignVertical: 'top',
   },
+  toolsCountBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: Radius.full,
+    gap: 4,
+  },
+  toolsCountText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  powerToolsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    rowGap: Spacing.sm,
+    marginBottom: Spacing.lg,
+  },
+  powerToolCard: {
+    width: '48.5%',
+    padding: Spacing.md,
+    borderRadius: Radius.xl,
+    borderWidth: 1.2,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  powerToolIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: Radius.lg,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: Spacing.sm,
+  },
+  powerToolTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+    marginBottom: 2,
+  },
+  powerToolSubtitle: {
+    fontSize: 11,
+    fontWeight: '500',
+    lineHeight: 15,
+  },
+  securityScoreCard: {
+    borderRadius: Radius.xl,
+    padding: Spacing.md,
+    borderWidth: 1.2,
+    marginBottom: Spacing.sm + 2,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  securityScoreHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.sm,
+  },
+  securityScoreIconBox: {
+    width: 32,
+    height: 32,
+    borderRadius: Radius.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  securityScoreTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  securityScoreSub: {
+    fontSize: 11,
+    fontWeight: '500',
+    marginTop: 1,
+  },
+  scoreBadgePill: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: Radius.full,
+  },
+  scoreBadgeText: {
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  securityMeterBg: {
+    height: 5,
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  securityMeterFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
 });
-
-
-
-
-
-
-
-
-
