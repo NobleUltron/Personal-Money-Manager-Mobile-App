@@ -338,7 +338,7 @@ export default function GoalsScreen() {
       >
         {/* 1. Hero Savings Portfolio & Milestone Card */}
         <LinearGradient
-          colors={isDark ? ['#1E1B4B', '#0F172A'] : ['#EEF2FF', '#FFFFFF']}
+          colors={isDark ? ['#0B0F19', '#030712'] : ['#F8FAFC', '#FFFFFF']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={[styles.heroCard, { borderColor: colors.border }]}
@@ -398,6 +398,45 @@ export default function GoalsScreen() {
           </View>
         </LinearGradient>
 
+        {/* 1.5 Quick Presets Horizontal Strip */}
+        <View style={{ marginBottom: Spacing.md }}>
+          <Text style={[styles.sectionSubtitle, { color: colors.textSecondary, marginBottom: 6 }]}>
+            QUICK GOAL TEMPLATES (1-TAP)
+          </Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingRight: Spacing.md }}>
+            {GOAL_TEMPLATES.map((tmpl) => (
+              <TouchableOpacity
+                key={tmpl.name}
+                activeOpacity={0.75}
+                onPress={() => {
+                  triggerHaptic.selection();
+                  setEditingGoal(null);
+                  setName(tmpl.name);
+                  setCategory(tmpl.category);
+                  setColor(tmpl.color);
+                  setTargetAmount('');
+                  setCurrentAmount('0');
+                  setTargetDate('');
+                  setNotes('');
+                  setFormError('');
+                  setCreateModalVisible(true);
+                }}
+                style={[
+                  styles.presetChip,
+                  {
+                    backgroundColor: isDark ? '#0F172A' : colors.surfaceElevated,
+                    borderColor: isDark ? '#1E293B' : colors.borderSubtle,
+                  },
+                ]}
+              >
+                <Text style={{ fontSize: 13 }}>{tmpl.icon}</Text>
+                <Text style={[styles.presetChipText, { color: colors.text }]}>{tmpl.name}</Text>
+                <Plus size={11} color={colors.primary} strokeWidth={2.5} />
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
         {/* 2. Filter Chips */}
         <View style={styles.filterSection}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
@@ -418,8 +457,8 @@ export default function GoalsScreen() {
                   style={[
                     styles.filterChip,
                     {
-                      backgroundColor: isSelected ? colors.primary : colors.surfaceElevated,
-                      borderColor: isSelected ? colors.primary : colors.border,
+                      backgroundColor: isSelected ? colors.primary : (isDark ? '#0F172A' : colors.surfaceElevated),
+                      borderColor: isSelected ? colors.primary : (isDark ? '#1E293B' : colors.border),
                     },
                   ]}
                 >
@@ -1006,6 +1045,15 @@ const styles = StyleSheet.create({
   },
   actionBtnText: {
     fontSize: 13,
+    fontWeight: '700',
+  },
+  sectionSubtitle: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+  },
+  presetChipText: {
+    fontSize: 11,
     fontWeight: '700',
   },
 });

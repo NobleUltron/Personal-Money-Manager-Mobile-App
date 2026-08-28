@@ -1,52 +1,59 @@
-﻿import React from 'react';
+import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Target, Plus, CheckCircle2, Calendar, TrendingUp, Sparkles, Trophy, Clock } from 'lucide-react-native';
+import { Target, Trophy, Sparkles, Clock, Plus, CheckCircle2, ArrowRight } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Card } from '../ui/Card';
-import { Badge } from '../ui/Badge';
 import { useTheme } from '../../context/ThemeContext';
 import { usePrivacy } from '../../context/PrivacyContext';
 import { Goal } from '../../types';
 import { triggerHaptic } from '../../utils/haptics';
-import { Gradients, Radius, Spacing, Typography } from '../../constants/theme';
+import { Gradients, Radius, Spacing } from '../../constants/theme';
 
 interface GoalCardProps {
   goal: Goal;
   currencySymbol?: string;
-  onDeposit?: () => void;
   onPress?: () => void;
+  onDeposit?: () => void;
 }
 
-const CATEGORY_ICONS: Record<string, { icon: string; bg: string }> = {
-  emergency: { icon: '🛡️', bg: 'rgba(239, 68, 68, 0.15)' },
-  car: { icon: '🚗', bg: 'rgba(59, 130, 246, 0.15)' },
-  vehicle: { icon: '🚗', bg: 'rgba(59, 130, 246, 0.15)' },
-  home: { icon: '🏠', bg: 'rgba(99, 102, 241, 0.15)' },
-  house: { icon: '🏠', bg: 'rgba(99, 102, 241, 0.15)' },
-  vacation: { icon: '🏖️', bg: 'rgba(14, 165, 233, 0.15)' },
-  travel: { icon: '✈️', bg: 'rgba(14, 165, 233, 0.15)' },
-  wedding: { icon: '💍', bg: 'rgba(236, 72, 153, 0.15)' },
-  gadget: { icon: '💻', bg: 'rgba(168, 85, 247, 0.15)' },
-  laptop: { icon: '💻', bg: 'rgba(168, 85, 247, 0.15)' },
-  tech: { icon: '📱', bg: 'rgba(168, 85, 247, 0.15)' },
-  business: { icon: '💼', bg: 'rgba(16, 185, 129, 0.15)' },
-  education: { icon: '🎓', bg: 'rgba(245, 158, 11, 0.15)' },
+const CATEGORY_ICONS: Record<string, { icon: string; bg: string; color: string; border: string }> = {
+  emergency: { icon: '🛡️', bg: 'rgba(239, 68, 68, 0.15)', color: '#EF4444', border: 'rgba(239, 68, 68, 0.25)' },
+  security: { icon: '🛡️', bg: 'rgba(239, 68, 68, 0.15)', color: '#EF4444', border: 'rgba(239, 68, 68, 0.25)' },
+  car: { icon: '🚗', bg: 'rgba(59, 130, 246, 0.15)', color: '#3B82F6', border: 'rgba(59, 130, 246, 0.25)' },
+  vehicle: { icon: '🚗', bg: 'rgba(59, 130, 246, 0.15)', color: '#3B82F6', border: 'rgba(59, 130, 246, 0.25)' },
+  transport: { icon: '🚗', bg: 'rgba(59, 130, 246, 0.15)', color: '#3B82F6', border: 'rgba(59, 130, 246, 0.25)' },
+  home: { icon: '🏠', bg: 'rgba(99, 102, 241, 0.15)', color: '#6366F1', border: 'rgba(99, 102, 241, 0.25)' },
+  house: { icon: '🏠', bg: 'rgba(99, 102, 241, 0.15)', color: '#6366F1', border: 'rgba(99, 102, 241, 0.25)' },
+  land: { icon: '🏠', bg: 'rgba(99, 102, 241, 0.15)', color: '#6366F1', border: 'rgba(99, 102, 241, 0.25)' },
+  property: { icon: '🏠', bg: 'rgba(99, 102, 241, 0.15)', color: '#6366F1', border: 'rgba(99, 102, 241, 0.25)' },
+  vacation: { icon: '🏖️', bg: 'rgba(14, 165, 233, 0.15)', color: '#0EA5E9', border: 'rgba(14, 165, 233, 0.25)' },
+  holiday: { icon: '🏖️', bg: 'rgba(14, 165, 233, 0.15)', color: '#0EA5E9', border: 'rgba(14, 165, 233, 0.25)' },
+  travel: { icon: '🏖️', bg: 'rgba(14, 165, 233, 0.15)', color: '#0EA5E9', border: 'rgba(14, 165, 233, 0.25)' },
+  wedding: { icon: '💍', bg: 'rgba(236, 72, 153, 0.15)', color: '#EC4899', border: 'rgba(236, 72, 153, 0.25)' },
+  ceremony: { icon: '💍', bg: 'rgba(236, 72, 153, 0.15)', color: '#EC4899', border: 'rgba(236, 72, 153, 0.25)' },
+  laptop: { icon: '💻', bg: 'rgba(168, 85, 247, 0.15)', color: '#A855F7', border: 'rgba(168, 85, 247, 0.25)' },
+  tech: { icon: '💻', bg: 'rgba(168, 85, 247, 0.15)', color: '#A855F7', border: 'rgba(168, 85, 247, 0.25)' },
+  gadget: { icon: '💻', bg: 'rgba(168, 85, 247, 0.15)', color: '#A855F7', border: 'rgba(168, 85, 247, 0.25)' },
+  business: { icon: '💼', bg: 'rgba(16, 185, 129, 0.15)', color: '#10B981', border: 'rgba(16, 185, 129, 0.25)' },
+  investment: { icon: '💼', bg: 'rgba(16, 185, 129, 0.15)', color: '#10B981', border: 'rgba(16, 185, 129, 0.25)' },
+  startup: { icon: '💼', bg: 'rgba(16, 185, 129, 0.15)', color: '#10B981', border: 'rgba(16, 185, 129, 0.25)' },
 };
 
 export const GoalCard: React.FC<GoalCardProps> = ({
   goal,
   currencySymbol = 'UGX',
-  onDeposit,
   onPress,
+  onDeposit,
 }) => {
   const { colors, isDark } = useTheme();
   const { formatAmount } = usePrivacy();
 
-  const lowerName = `${goal.name} ${goal.category}`.toLowerCase();
-  const matchedKey = Object.keys(CATEGORY_ICONS).find((k) => lowerName.includes(k));
+  // Match category
+  const lowerCat = `${goal.category || ''} ${goal.name || ''}`.toLowerCase();
+  const matchedKey = Object.keys(CATEGORY_ICONS).find((k) => lowerCat.includes(k));
   const catStyle = matchedKey
     ? CATEGORY_ICONS[matchedKey]
-    : { icon: '🎯', bg: goal.color ? `${goal.color}20` : 'rgba(99, 102, 241, 0.15)' };
+    : { icon: '🎯', bg: 'rgba(99, 102, 241, 0.14)', color: '#6366F1', border: 'rgba(99, 102, 241, 0.25)' };
 
   const pct = Math.min(Math.max(Number(goal.percentage) || 0, 0), 100);
   const isCompleted = goal.isCompleted || Number(goal.current_amount) >= Number(goal.target_amount);
@@ -74,12 +81,24 @@ export const GoalCard: React.FC<GoalCardProps> = ({
   }, [goal.target_date, goal.target_amount, goal.current_amount]);
 
   // Milestone Tag
-  let milestoneBadge = '🥉 25% Milestone';
-  if (isCompleted) milestoneBadge = '🏆 Goal Achieved!';
-  else if (pct >= 75) milestoneBadge = '🥇 75% Almost There';
-  else if (pct >= 50) milestoneBadge = '🥈 50% Halfway';
-  else if (pct >= 25) milestoneBadge = '🥉 25% Started';
-  else milestoneBadge = '🚀 In Progress';
+  let milestoneBadge = '🥉 25% Started';
+  let milestoneColor = '#6366F1';
+  if (isCompleted) {
+    milestoneBadge = '🏆 Goal Achieved!';
+    milestoneColor = '#10B981';
+  } else if (pct >= 75) {
+    milestoneBadge = '🥇 75% Almost There';
+    milestoneColor = '#F59E0B';
+  } else if (pct >= 50) {
+    milestoneBadge = '🥈 50% Halfway';
+    milestoneColor = '#3B82F6';
+  } else if (pct >= 25) {
+    milestoneBadge = '🥉 25% Started';
+    milestoneColor = '#6366F1';
+  } else {
+    milestoneBadge = '🚀 In Progress';
+    milestoneColor = colors.textSecondary;
+  }
 
   return (
     <Card
@@ -89,13 +108,19 @@ export const GoalCard: React.FC<GoalCardProps> = ({
       }}
       style={[
         styles.card,
-        isCompleted && { borderColor: 'rgba(16, 185, 129, 0.4)', borderWidth: 1.5 },
+        {
+          backgroundColor: isDark ? '#0F172A' : '#FFFFFF',
+          borderColor: isCompleted
+            ? 'rgba(16, 185, 129, 0.4)'
+            : isDark ? catStyle.border : colors.borderSubtle,
+          borderWidth: 1.2,
+        },
       ]}
     >
       {/* Top Row: Icon + Name + Percentage Badge */}
       <View style={styles.topRow}>
         <View style={styles.leftInfo}>
-          <View style={[styles.iconBox, { backgroundColor: catStyle.bg }]}>
+          <View style={[styles.iconBox, { backgroundColor: catStyle.bg, borderColor: catStyle.border }]}>
             <Text style={{ fontSize: 20 }}>{catStyle.icon}</Text>
           </View>
           <View style={{ flex: 1 }}>
@@ -103,14 +128,22 @@ export const GoalCard: React.FC<GoalCardProps> = ({
               {goal.name}
             </Text>
             <View style={styles.milestoneRow}>
-              <Text style={[styles.milestoneText, { color: isCompleted ? '#10B981' : colors.primary }]}>
+              <Text style={[styles.milestoneText, { color: milestoneColor }]}>
                 {milestoneBadge}
               </Text>
             </View>
           </View>
         </View>
 
-        <View style={[styles.pctBadge, { backgroundColor: isCompleted ? 'rgba(16, 185, 129, 0.15)' : 'rgba(99, 102, 241, 0.15)' }]}>
+        <View
+          style={[
+            styles.pctBadge,
+            {
+              backgroundColor: isCompleted ? 'rgba(16, 185, 129, 0.15)' : 'rgba(99, 102, 241, 0.15)',
+              borderColor: isCompleted ? 'rgba(16, 185, 129, 0.3)' : 'rgba(99, 102, 241, 0.3)',
+            },
+          ]}
+        >
           {isCompleted ? (
             <Trophy size={13} color="#10B981" />
           ) : (
@@ -123,7 +156,7 @@ export const GoalCard: React.FC<GoalCardProps> = ({
       </View>
 
       {/* Progress Track */}
-      <View style={[styles.progressTrack, { backgroundColor: colors.surfaceElevated }]}>
+      <View style={[styles.progressTrack, { backgroundColor: isDark ? '#1E293B' : colors.surfaceElevated }]}>
         <LinearGradient
           colors={isCompleted ? ['#10B981', '#059669'] : (Gradients.primary as any)}
           start={{ x: 0, y: 0 }}
@@ -150,7 +183,7 @@ export const GoalCard: React.FC<GoalCardProps> = ({
       </View>
 
       {/* Bottom Row: Target Date / Pace & Quick Deposit Button */}
-      <View style={[styles.bottomRow, { borderTopColor: colors.borderSubtle }]}>
+      <View style={[styles.bottomRow, { borderTopColor: isDark ? '#1E293B' : colors.borderSubtle }]}>
         <View style={styles.targetDateBox}>
           {targetDateInfo ? (
             <View style={styles.paceContainer}>
@@ -162,7 +195,7 @@ export const GoalCard: React.FC<GoalCardProps> = ({
               </View>
               {targetDateInfo.monthlyPace > 0 && !isCompleted && (
                 <Text style={[styles.paceText, { color: colors.primary }]}>
-                  ~{formatAmount(targetDateInfo.monthlyPace, currencySymbol)}/mo
+                  ~{formatAmount(targetDateInfo.monthlyPace, currencySymbol)}/mo pace
                 </Text>
               )}
             </View>
@@ -179,10 +212,16 @@ export const GoalCard: React.FC<GoalCardProps> = ({
               triggerHaptic.medium();
               onDeposit();
             }}
-            style={[styles.quickDepositBtn, { backgroundColor: colors.primary }]}
+            style={[
+              styles.quickDepositBtn,
+              {
+                backgroundColor: isDark ? 'rgba(99, 102, 241, 0.15)' : 'rgba(99, 102, 241, 0.08)',
+                borderColor: isDark ? 'rgba(99, 102, 241, 0.3)' : 'rgba(99, 102, 241, 0.2)',
+              },
+            ]}
           >
-            <Plus size={14} color="#FFFFFF" strokeWidth={2.5} />
-            <Text style={styles.quickDepositBtnText}>Deposit</Text>
+            <Plus size={13} color={colors.primary} strokeWidth={2.5} />
+            <Text style={[styles.quickDepositBtnText, { color: colors.primary }]}>Deposit</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -192,9 +231,14 @@ export const GoalCard: React.FC<GoalCardProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    marginBottom: Spacing.sm,
+    marginBottom: Spacing.sm + 2,
     padding: Spacing.md,
     borderRadius: Radius.xl,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 3,
   },
   topRow: {
     flexDirection: 'row',
@@ -209,15 +253,16 @@ const styles = StyleSheet.create({
     marginRight: Spacing.sm,
   },
   iconBox: {
-    width: 44,
-    height: 44,
+    width: 42,
+    height: 42,
     borderRadius: Radius.lg,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: Spacing.sm,
+    borderWidth: 1,
   },
   name: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '800',
     letterSpacing: -0.2,
   },
@@ -232,12 +277,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
     borderRadius: Radius.full,
+    borderWidth: 1,
   },
   pctBadgeText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '800',
   },
   progressTrack: {
@@ -295,18 +341,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
     borderRadius: Radius.full,
-    shadowColor: '#6366F1',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
+    borderWidth: 1,
   },
   quickDepositBtnText: {
     fontSize: 12,
     fontWeight: '800',
-    color: '#FFFFFF',
   },
 });
