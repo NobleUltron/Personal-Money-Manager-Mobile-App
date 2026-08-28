@@ -339,7 +339,7 @@ export default function TransactionsScreen() {
       />
 
       {/* Statement Summary Card */}
-      <View style={[styles.summaryCard, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: isDark ? 1 : 0 }]}>
+      <View style={[styles.summaryCard, { backgroundColor: isDark ? '#0F172A' : '#FFFFFF', borderColor: isDark ? '#1E293B' : '#E2E8F0', borderWidth: 1.2 }]}>
         <View style={styles.summaryRow}>
           <View style={styles.summaryItem}>
             <View style={styles.summaryLabelRow}>
