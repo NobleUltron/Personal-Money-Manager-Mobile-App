@@ -15,17 +15,17 @@ interface ThemeContextType {
 }
 
 const ThemeContext = createContext<ThemeContextType>({
-  mode: 'system',
-  isDark: false,
-  colors: Colors.light,
+  mode: 'dark',
+  isDark: true,
+  colors: Colors.dark,
   setMode: () => {},
 });
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const systemScheme = useColorScheme();
-  const [mode, setModeState] = useState<ThemeMode>('system');
+  const [mode, setModeState] = useState<ThemeMode>('dark');
 
-  // Load saved theme on app launch
+  // Load saved theme on app launch, defaulting to 'dark' if none stored
   useEffect(() => {
     async function loadStoredTheme() {
       try {
