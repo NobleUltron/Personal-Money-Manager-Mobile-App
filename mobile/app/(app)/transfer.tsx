@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   View,
   ActivityIndicator,
+  Modal as RNModal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -605,113 +606,90 @@ export default function TransferScreen() {
         </View>
       </Modal>
 
-      {/* MODAL 3: Fintech Transfer Success Receipt Modal */}
-      <Modal
+      {/* Custom Fintech Success Alert Dialog */}
+      <RNModal
         visible={successModalVisible}
-        onClose={() => setSuccessModalVisible(false)}
-        title="Transfer Completed"
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSuccessModalVisible(false)}
       >
-        {transferReceipt && (
-          <View style={styles.successReceiptContainer}>
-            {/* Glowing Success Badge */}
-            <View style={styles.successBadgeWrapper}>
-              <LinearGradient
-                colors={['#10B981', '#059669']}
-                style={styles.successBadgeCircle}
-              >
-                <CheckCircle2 size={36} color="#FFFFFF" />
-              </LinearGradient>
-              <Text style={[styles.successTitle, { color: colors.text }]}>Transfer Successful!</Text>
-              <Text style={[styles.successSubtitle, { color: colors.textMuted }]}>
-                {transferReceipt.message || 'Funds transferred instantly'}
+        <View style={styles.alertOverlay}>
+          <View
+            style={[
+              styles.alertDialogCard,
+              {
+                backgroundColor: isDark ? '#0F172A' : '#FFFFFF',
+                borderColor: isDark ? '#1E293B' : '#E2E8F0',
+              },
+            ]}
+          >
+            {/* Glowing Emerald Check Icon */}
+            <View style={styles.alertIconBubble}>
+              <CheckCircle2 size={26} color="#10B981" strokeWidth={2.5} />
+            </View>
+
+            {/* Alert Title */}
+            <Text style={[styles.alertTitle, { color: colors.text }]}>Transfer Completed</Text>
+
+            {/* Alert Body Message */}
+            <Text style={[styles.alertMessage, { color: colors.textSecondary }]}>
+              Successfully transferred{' '}
+              <Text style={{ fontWeight: '800', color: colors.primary }}>
+                {transferReceipt ? formatAmount(transferReceipt.amount, currencySymbol) : ''}
               </Text>
-            </View>
-
-            {/* Hero Transfer Amount */}
-            <View style={[styles.successAmountBox, { backgroundColor: colors.surfaceElevated, borderColor: colors.borderSubtle }]}>
-              <Text style={[styles.successAmountLabel, { color: colors.textSecondary }]}>AMOUNT TRANSFERRED</Text>
-              <Text style={[styles.successAmountText, { color: colors.primary }]}>
-                {formatAmount(transferReceipt.amount, currencySymbol)}
+              {' '}from{' '}
+              <Text style={{ fontWeight: '700', color: colors.text }}>
+                {transferReceipt?.fromName}
               </Text>
-            </View>
+              {' '}to{' '}
+              <Text style={{ fontWeight: '700', color: colors.text }}>
+                {transferReceipt?.toName}
+              </Text>
+              .
+            </Text>
 
-            {/* Transfer Path Box */}
-            <View style={[styles.transferPathBox, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
-              <View style={styles.pathAccountRow}>
-                <View style={[styles.pathIconBox, { backgroundColor: 'rgba(239, 68, 68, 0.15)' }]}>
-                  <ArrowUpRight size={16} color={colors.danger} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.pathLabel, { color: colors.textSecondary }]}>Debited From</Text>
-                  <Text style={[styles.pathAccName, { color: colors.text }]}>{transferReceipt.fromName}</Text>
-                </View>
-              </View>
-
-              <View style={styles.pathDivider}>
-                <View style={[styles.pathDividerLine, { backgroundColor: colors.borderSubtle }]} />
-                <View style={[styles.pathBadge, { backgroundColor: colors.surfaceElevated, borderColor: colors.borderSubtle }]}>
-                  <ArrowLeftRight size={12} color={colors.primary} />
-                </View>
-                <View style={[styles.pathDividerLine, { backgroundColor: colors.borderSubtle }]} />
-              </View>
-
-              <View style={styles.pathAccountRow}>
-                <View style={[styles.pathIconBox, { backgroundColor: 'rgba(16, 185, 129, 0.15)' }]}>
-                  <ArrowDownLeft size={16} color={colors.success} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.pathLabel, { color: colors.textSecondary }]}>Credited To</Text>
-                  <Text style={[styles.pathAccName, { color: colors.text }]}>{transferReceipt.toName}</Text>
-                </View>
-              </View>
-            </View>
-
-            {/* Metadata breakdown */}
-            <View style={[styles.successMetaBox, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
-              <View style={styles.successMetaRow}>
-                <Text style={[styles.successMetaLabel, { color: colors.textSecondary }]}>Date</Text>
-                <Text style={[styles.successMetaVal, { color: colors.text }]}>{transferReceipt.date}</Text>
-              </View>
-              <View style={styles.successMetaRow}>
-                <Text style={[styles.successMetaLabel, { color: colors.textSecondary }]}>Fee</Text>
-                <Text style={[styles.successMetaVal, { color: '#10B981', fontWeight: '800' }]}>FREE ($0.00)</Text>
-              </View>
-              {transferReceipt.reason ? (
-                <View style={styles.successMetaRow}>
-                  <Text style={[styles.successMetaLabel, { color: colors.textSecondary }]}>Note</Text>
-                  <Text style={[styles.successMetaVal, { color: colors.text }]}>{transferReceipt.reason}</Text>
-                </View>
-              ) : null}
-            </View>
-
-            {/* Action Buttons */}
-            <View style={{ gap: Spacing.sm, marginTop: Spacing.sm }}>
-              <Button
-                title="View All Accounts"
-                variant="primary"
-                size="lg"
+            {/* Action Buttons (App Themed) */}
+            <View style={styles.alertActionsRow}>
+              <TouchableOpacity
+                activeOpacity={0.75}
                 onPress={() => {
                   triggerHaptic.selection();
                   setSuccessModalVisible(false);
                   router.replace('/(app)/accounts');
                 }}
-              />
+                style={[
+                  styles.alertButton,
+                  {
+                    backgroundColor: isDark ? 'rgba(99, 102, 241, 0.15)' : 'rgba(99, 102, 241, 0.1)',
+                    borderColor: isDark ? 'rgba(99, 102, 241, 0.3)' : 'rgba(99, 102, 241, 0.2)',
+                  },
+                ]}
+              >
+                <Text style={[styles.alertButtonText, { color: colors.primary }]}>VIEW ACCOUNTS</Text>
+              </TouchableOpacity>
 
-              <Button
-                title="Done"
-                variant="outline"
-                size="md"
+              <TouchableOpacity
+                activeOpacity={0.75}
                 onPress={() => {
                   triggerHaptic.light();
                   setSuccessModalVisible(false);
                   router.back();
                 }}
-              />
+                style={[
+                  styles.alertButton,
+                  {
+                    backgroundColor: isDark ? '#1E293B' : '#F1F5F9',
+                    borderColor: isDark ? '#334155' : '#E2E8F0',
+                  },
+                ]}
+              >
+                <Text style={[styles.alertButtonText, { color: colors.textSecondary }]}>DONE</Text>
+              </TouchableOpacity>
             </View>
           </View>
-        )}
-      </Modal>
-    </SafeAreaView>
+        </View>
+      </RNModal>
+      </SafeAreaView>
   );
 }
 
@@ -1010,109 +988,68 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     lineHeight: 16,
   },
-  successReceiptContainer: {
-    gap: Spacing.md,
+  alertOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(2, 6, 23, 0.75)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Spacing.lg,
   },
-  successBadgeWrapper: {
+  alertDialogCard: {
+    width: '100%',
+    maxWidth: 340,
+    borderRadius: Radius.xxl,
+    padding: Spacing.xl,
+    alignItems: 'center',
+    borderWidth: 1.5,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.35,
+    shadowRadius: 24,
+    elevation: 10,
+  },
+  alertIconBubble: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: 'rgba(16, 185, 129, 0.14)',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: Spacing.sm,
+    marginBottom: Spacing.md,
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.25)',
   },
-  successBadgeCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: Spacing.sm,
-  },
-  successTitle: {
+  alertTitle: {
     fontSize: 18,
     fontWeight: '800',
-    letterSpacing: -0.3,
+    textAlign: 'center',
+    letterSpacing: -0.2,
+    marginBottom: Spacing.xs,
   },
-  successSubtitle: {
-    fontSize: 12,
-    marginTop: 2,
-  },
-  successAmountBox: {
-    alignItems: 'center',
-    padding: Spacing.md,
-    borderRadius: Radius.xl,
-    borderWidth: 1,
-  },
-  successAmountLabel: {
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.6,
-    marginBottom: 2,
-  },
-  successAmountText: {
-    fontSize: 30,
-    fontWeight: '900',
-    letterSpacing: -0.5,
-  },
-  transferPathBox: {
-    borderRadius: Radius.xl,
-    padding: Spacing.md,
-    borderWidth: 1,
-    gap: Spacing.xs,
-  },
-  pathAccountRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  pathIconBox: {
-    width: 32,
-    height: 32,
-    borderRadius: Radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pathLabel: {
-    fontSize: 10,
-    fontWeight: '600',
-  },
-  pathAccName: {
+  alertMessage: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '500',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: Spacing.xl,
+    paddingHorizontal: Spacing.xs,
   },
-  pathDivider: {
+  alertActionsRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 2,
+    gap: Spacing.sm,
+    width: '100%',
   },
-  pathDividerLine: {
+  alertButton: {
     flex: 1,
-    height: 1,
-  },
-  pathBadge: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 1,
+    height: 42,
+    borderRadius: Radius.lg,
     alignItems: 'center',
     justifyContent: 'center',
-    marginHorizontal: 8,
-  },
-  successMetaBox: {
-    borderRadius: Radius.xl,
-    padding: Spacing.md,
     borderWidth: 1,
-    gap: Spacing.xs,
   },
-  successMetaRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  successMetaLabel: {
+  alertButtonText: {
     fontSize: 12,
-    fontWeight: '600',
-  },
-  successMetaVal: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
 });
