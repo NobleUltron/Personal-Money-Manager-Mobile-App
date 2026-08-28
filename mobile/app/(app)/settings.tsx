@@ -99,7 +99,7 @@ export default function SettingsScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { user, logout, updateUserData, refreshUser } = useAuth();
-  const { isDark, setMode, colors } = useTheme();
+  const { isDark, mode, setMode, colors } = useTheme();
   const {
     isBiometricsEnabled,
     isHardwareSupported,
@@ -2149,5 +2149,23 @@ const styles = StyleSheet.create({
   securityMeterFill: {
     height: '100%',
     borderRadius: 3,
+  },
+  themeSegmentRow: {
+    flexDirection: 'row',
+    padding: 3,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    gap: 4,
+  },
+  themeSegmentBtn: {
+    flex: 1,
+    paddingVertical: 7,
+    borderRadius: Radius.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  themeSegmentText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
 });
