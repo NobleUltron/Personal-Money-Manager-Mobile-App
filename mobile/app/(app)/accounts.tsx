@@ -221,13 +221,16 @@ export default function AccountsScreen() {
     momoTotal,
     cashTotal,
     cardsTotal,
+    savingsTotal,
     typeCounts,
+    percentages,
   } = useMemo(() => {
     let total = 0;
     let bank = 0;
     let momo = 0;
     let cash = 0;
     let cards = 0;
+    let savings = 0;
 
     const counts: Record<string, number> = {
       all: accounts.length,
@@ -242,17 +245,24 @@ export default function AccountsScreen() {
     accounts.forEach((acc) => {
       const bal = Number(acc.balance) || 0;
       total += bal;
-      const t = (acc.type || 'cash').toLowerCase();
+      const t = (acc.type || 'cash').toLowerCase().replace(/[\s-]+/g, '_');
       if (counts[t] !== undefined) counts[t]++;
       if (acc.is_shared || (acc.members_count && acc.members_count > 1)) {
         counts.shared++;
       }
 
-      if (t === 'bank') bank += bal;
-      else if (t === 'mobile_money' || t === 'mobile money') momo += bal;
-      else if (t === 'cash') cash += bal;
-      else if (t === 'credit_card' || t === 'credit') cards += bal;
+      if (t.includes('bank')) bank += bal;
+      else if (t.includes('momo') || t.includes('mobile')) momo += bal;
+      else if (t.includes('cash')) cash += bal;
+      else if (t.includes('credit')) cards += bal;
+      else if (t.includes('saving')) savings += bal;
     });
+
+    const safeTotal = total > 0 ? total : 1;
+    const pBank = Math.max(0, Math.round((bank / safeTotal) * 100));
+    const pMomo = Math.max(0, Math.round((momo / safeTotal) * 100));
+    const pCash = Math.max(0, Math.round((cash / safeTotal) * 100));
+    const pSavings = Math.max(0, Math.round((savings / safeTotal) * 100));
 
     return {
       totalLiquidBalance: total,
@@ -260,7 +270,9 @@ export default function AccountsScreen() {
       momoTotal: momo,
       cashTotal: cash,
       cardsTotal: cards,
+      savingsTotal: savings,
       typeCounts: counts,
+      percentages: { bank: pBank, momo: pMomo, cash: pCash, savings: pSavings },
     };
   }, [accounts]);
 
@@ -319,10 +331,10 @@ export default function AccountsScreen() {
       >
         {/* 1. Hero Portfolio Summary Card */}
         <LinearGradient
-          colors={isDark ? ['#1E1B4B', '#0F172A'] : ['#EEF2FF', '#FFFFFF']}
+          colors={isDark ? ['#0B0F19', '#030712'] : ['#F8FAFC', '#FFFFFF']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={[styles.heroCard, { borderColor: isDark ? 'rgba(99, 102, 241, 0.3)' : colors.border }]}
+          style={[styles.heroCard, { borderColor: isDark ? '#1E293B' : '#E2E8F0' }]}
         >
           <View style={styles.heroTopRow}>
             <View>
@@ -345,20 +357,20 @@ export default function AccountsScreen() {
           {/* Allocation Progress Bar */}
           {totalLiquidBalance > 0 && (
             <View style={styles.progressContainer}>
-              <View style={[styles.progressBarBackground, { backgroundColor: colors.surfaceElevated }]}>
-                {bankTotal > 0 && (
-                  <View
-                    style={[
-                      styles.progressSegment,
-                      { width: `${(bankTotal / totalLiquidBalance) * 100}%`, backgroundColor: '#6366F1' },
-                    ]}
-                  />
-                )}
+              <View style={[styles.progressBarBackground, { backgroundColor: isDark ? '#1E293B' : '#E2E8F0' }]}>
                 {momoTotal > 0 && (
                   <View
                     style={[
                       styles.progressSegment,
-                      { width: `${(momoTotal / totalLiquidBalance) * 100}%`, backgroundColor: '#10B981' },
+                      { width: `${Math.max(4, (momoTotal / totalLiquidBalance) * 100)}%`, backgroundColor: '#10B981' },
+                    ]}
+                  />
+                )}
+                {bankTotal > 0 && (
+                  <View
+                    style={[
+                      styles.progressSegment,
+                      { width: `${Math.max(4, (bankTotal / totalLiquidBalance) * 100)}%`, backgroundColor: '#6366F1' },
                     ]}
                   />
                 )}
@@ -366,7 +378,7 @@ export default function AccountsScreen() {
                   <View
                     style={[
                       styles.progressSegment,
-                      { width: `${(cashTotal / totalLiquidBalance) * 100}%`, backgroundColor: '#3B82F6' },
+                      { width: `${Math.max(4, (cashTotal / totalLiquidBalance) * 100)}%`, backgroundColor: '#0EA5E9' },
                     ]}
                   />
                 )}
@@ -374,7 +386,7 @@ export default function AccountsScreen() {
                   <View
                     style={[
                       styles.progressSegment,
-                      { width: `${(cardsTotal / totalLiquidBalance) * 100}%`, backgroundColor: '#F59E0B' },
+                      { width: `${Math.max(4, (cardsTotal / totalLiquidBalance) * 100)}%`, backgroundColor: '#F59E0B' },
                     ]}
                   />
                 )}
@@ -387,7 +399,7 @@ export default function AccountsScreen() {
             <View style={styles.heroStatItem}>
               <View style={styles.statDotRow}>
                 <View style={[styles.statDot, { backgroundColor: '#6366F1' }]} />
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Banks</Text>
+                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Banks {percentages.bank > 0 ? `(${percentages.bank}%)` : ''}</Text>
               </View>
               <Text style={[styles.statValue, { color: colors.text }]} numberOfLines={1}>
                 {formatAmount(bankTotal, currencySymbol)}
@@ -397,7 +409,7 @@ export default function AccountsScreen() {
             <View style={styles.heroStatItem}>
               <View style={styles.statDotRow}>
                 <View style={[styles.statDot, { backgroundColor: '#10B981' }]} />
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>MoMo</Text>
+                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>MoMo {percentages.momo > 0 ? `(${percentages.momo}%)` : ''}</Text>
               </View>
               <Text style={[styles.statValue, { color: colors.text }]} numberOfLines={1}>
                 {formatAmount(momoTotal, currencySymbol)}
@@ -407,7 +419,7 @@ export default function AccountsScreen() {
             <View style={styles.heroStatItem}>
               <View style={styles.statDotRow}>
                 <View style={[styles.statDot, { backgroundColor: '#3B82F6' }]} />
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Cash</Text>
+                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Cash {percentages.cash > 0 ? `(${percentages.cash}%)` : ''}</Text>
               </View>
               <Text style={[styles.statValue, { color: colors.text }]} numberOfLines={1}>
                 {formatAmount(cashTotal, currencySymbol)}
@@ -439,8 +451,8 @@ export default function AccountsScreen() {
                   style={[
                     styles.filterChip,
                     {
-                      backgroundColor: isSelected ? colors.primary : colors.surfaceElevated,
-                      borderColor: isSelected ? colors.primary : colors.border,
+                      backgroundColor: isSelected ? colors.primary : (isDark ? '#0F172A' : colors.surfaceElevated),
+                      borderColor: isSelected ? colors.primary : (isDark ? '#1E293B' : colors.border),
                     },
                   ]}
                 >
