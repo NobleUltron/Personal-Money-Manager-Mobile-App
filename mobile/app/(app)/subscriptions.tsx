@@ -163,6 +163,19 @@ export default function SubscriptionsScreen() {
   };
 
   // 4. Modal Handlers
+    const handleSelectQuickPreset = (template: (typeof PRESET_TEMPLATES)[0]) => {
+    triggerHaptic.selection();
+    setEditingSub(null);
+    setName(template.name);
+    setCategory(template.category);
+    setFrequency(template.frequency);
+    setAmount('');
+    setAccountId(accounts && accounts.length > 0 ? accounts[0].id : '');
+    setNextDueDate(new Date().toISOString().split('T')[0]);
+    setFormError('');
+    setModalVisible(true);
+  };
+
   const openCreateModal = () => {
     triggerHaptic.selection();
     setEditingSub(null);
@@ -331,7 +344,7 @@ export default function SubscriptionsScreen() {
       >
         {/* 1. Hero Burn Rate Metric Card */}
         <LinearGradient
-          colors={isDark ? ['#1E1B4B', '#0F172A'] : ['#EEF2FF', '#FFFFFF']}
+          colors={isDark ? ['#0B0F19', '#030712'] : ['#F8FAFC', '#FFFFFF']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={[styles.heroCard, { borderColor: colors.border }]}
@@ -407,8 +420,8 @@ export default function SubscriptionsScreen() {
                   style={[
                     styles.filterChip,
                     {
-                      backgroundColor: isSelected ? colors.primary : colors.surfaceElevated,
-                      borderColor: isSelected ? colors.primary : colors.border,
+                      backgroundColor: isSelected ? colors.primary : (isDark ? '#0F172A' : colors.surfaceElevated),
+                      borderColor: isSelected ? colors.primary : (isDark ? '#1E293B' : colors.border),
                     },
                   ]}
                 >
@@ -962,8 +975,22 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
   },
+  sectionSubtitle: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+  },
+  presetChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    gap: 5,
+  },
+  presetChipText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
 });
-
-
-
-
