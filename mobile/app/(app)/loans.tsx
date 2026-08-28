@@ -364,10 +364,10 @@ export default function LoansScreen() {
       >
         {/* 1. Hero Debt & Loan Summary Portfolio Card */}
         <LinearGradient
-          colors={isDark ? ['#1E1B4B', '#0F172A'] : ['#EEF2FF', '#FFFFFF']}
+          colors={isDark ? ['#0B0F19', '#030712'] : ['#F8FAFC', '#FFFFFF']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={[styles.heroCard, { borderColor: colors.border }]}
+          style={[styles.heroCard, { borderColor: isDark ? '#1E293B' : '#E2E8F0', borderWidth: 1.2 }]}
         >
           <View style={styles.heroTopRow}>
             <View>
@@ -438,7 +438,7 @@ export default function LoansScreen() {
 
         {/* 2. Debt Payoff Strategy Planner Toggle Banner */}
         {activeDebts.length > 0 && (
-          <Card style={styles.payoffCard}>
+          <Card style={[styles.payoffCard, { backgroundColor: isDark ? '#0F172A' : '#FFFFFF', borderColor: isDark ? '#1E293B' : '#E2E8F0', borderWidth: 1.2 }]}>
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={() => {
@@ -574,8 +574,8 @@ export default function LoansScreen() {
                   style={[
                     styles.filterChip,
                     {
-                      backgroundColor: isSelected ? colors.primary : colors.surfaceElevated,
-                      borderColor: isSelected ? colors.primary : colors.border,
+                      backgroundColor: isSelected ? colors.primary : (isDark ? '#0F172A' : colors.surfaceElevated),
+                      borderColor: isSelected ? colors.primary : (isDark ? '#1E293B' : colors.borderSubtle),
                     },
                   ]}
                 >

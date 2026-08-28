@@ -1,16 +1,15 @@
-﻿import React from 'react';
+import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import {
+  AlertTriangle,
   ArrowDownLeft,
   ArrowUpRight,
   Calendar,
   CheckCircle2,
   Clock,
-  Trash2,
   Edit2,
-  HandCoins,
-  AlertTriangle,
-  Sparkles,
+  Trash2,
+  User,
 } from 'lucide-react-native';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
@@ -24,49 +23,53 @@ import { Radius, Spacing, Typography } from '../../constants/theme';
 interface LoanCardProps {
   loan: Loan;
   currencySymbol?: string;
+  onPress?: () => void;
   onRepay?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
-  onPress?: () => void;
 }
 
 export const LoanCard: React.FC<LoanCardProps> = ({
   loan,
   currencySymbol = 'UGX',
+  onPress,
   onRepay,
   onEdit,
   onDelete,
-  onPress,
 }) => {
   const { colors, isDark } = useTheme();
   const { formatAmount } = usePrivacy();
 
   const isBorrowed = loan.type === 'borrowed';
-  const percentPaid = Math.min(100, Math.max(0, Math.round((Number(loan.amount_paid) / Math.max(Number(loan.amount), 1)) * 100)));
+  const percentPaid = Math.min(
+    100,
+    Math.round(((Number(loan.amount_paid) || 0) / (Number(loan.amount) || 1)) * 100)
+  );
 
-  // Due Date Calculations
-  let dueDateFormatted = '';
+  // Due Date calculation
   let isOverdue = false;
   let daysRemaining = 0;
+  let dueDateFormatted = '';
 
   if (loan.due_date) {
-    const d = new Date(loan.due_date);
-    if (!isNaN(d.getTime())) {
-      dueDateFormatted = d.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      });
-      const now = new Date();
-      now.setHours(0, 0, 0, 0);
-      d.setHours(0, 0, 0, 0);
-      daysRemaining = Math.ceil((d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-      isOverdue = !loan.isPaidOff && daysRemaining < 0;
-    }
+    const due = new Date(loan.due_date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    due.setHours(0, 0, 0, 0);
+
+    const diffTime = due.getTime() - today.getTime();
+    daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    isOverdue = daysRemaining < 0 && !loan.isPaidOff;
+    dueDateFormatted = due.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
   }
 
-  // Avatar Initials
-  const initial = (loan.name || 'L').trim().charAt(0).toUpperCase();
+  const avatarBg = isBorrowed ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)';
+  const avatarBorder = isBorrowed ? 'rgba(239, 68, 68, 0.25)' : 'rgba(16, 185, 129, 0.25)';
+  const avatarColor = isBorrowed ? '#EF4444' : '#10B981';
 
   return (
     <Card
@@ -76,40 +79,38 @@ export const LoanCard: React.FC<LoanCardProps> = ({
       }}
       style={[
         styles.card,
-        isOverdue && { borderColor: 'rgba(239, 68, 68, 0.4)', borderWidth: 1.5 },
-        loan.isPaidOff && { borderColor: 'rgba(16, 185, 129, 0.3)' },
+        {
+          backgroundColor: isDark ? '#0F172A' : '#FFFFFF',
+          borderColor: isOverdue
+            ? 'rgba(239, 68, 68, 0.4)'
+            : loan.isPaidOff
+            ? 'rgba(16, 185, 129, 0.3)'
+            : isDark ? '#1E293B' : colors.borderSubtle,
+          borderWidth: 1.2,
+        },
       ]}
     >
-      {/* Top Header: Avatar + Name + Badges */}
+      {/* Top Row: Person Avatar / Name / Type Badge */}
       <View style={styles.topRow}>
         <View style={styles.titleInfo}>
-          <View
-            style={[
-              styles.avatarBox,
-              {
-                backgroundColor: isBorrowed
-                  ? isDark ? 'rgba(239, 68, 68, 0.2)' : 'rgba(239, 68, 68, 0.12)'
-                  : isDark ? 'rgba(16, 185, 129, 0.2)' : 'rgba(16, 185, 129, 0.12)',
-              },
-            ]}
-          >
-            <Text style={[styles.avatarText, { color: isBorrowed ? colors.danger : colors.success }]}>
-              {initial}
+          <View style={[styles.avatarBox, { backgroundColor: avatarBg, borderColor: avatarBorder }]}>
+            <Text style={[styles.avatarText, { color: avatarColor }]}>
+              {loan.name ? loan.name.substring(0, 2).toUpperCase() : 'LN'}
             </Text>
           </View>
-
           <View style={styles.titleTextContainer}>
             <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}>
               {loan.name}
             </Text>
             <Text style={[styles.typeText, { color: colors.textSecondary }]}>
-              {isBorrowed ? 'Debt to Repay' : 'Money Lent Out'}
+              {isBorrowed ? 'Debt (I owe them)' : 'Lent (They owe me)'}
+              {loan.account?.name ? ` • ${loan.account.name}` : ''}
             </Text>
           </View>
         </View>
 
         <Badge
-          label={loan.isPaidOff ? 'Settled 🎉' : isBorrowed ? 'I Owe' : 'Owed to Me'}
+          label={loan.isPaidOff ? 'Settled' : isBorrowed ? 'I Owe' : 'Lent'}
           variant={loan.isPaidOff ? 'success' : isBorrowed ? 'danger' : 'success'}
           size="sm"
         />
@@ -121,19 +122,24 @@ export const LoanCard: React.FC<LoanCardProps> = ({
           style={[
             styles.dueDateBadge,
             {
-              backgroundColor: isOverdue ? 'rgba(239, 68, 68, 0.15)' : colors.surfaceElevated,
+              backgroundColor: isOverdue
+                ? 'rgba(239, 68, 68, 0.15)'
+                : isDark ? '#0B0F19' : colors.surfaceElevated,
+              borderColor: isOverdue
+                ? 'rgba(239, 68, 68, 0.3)'
+                : isDark ? '#1E293B' : colors.borderSubtle,
             },
           ]}
         >
           {isOverdue ? (
-            <AlertTriangle size={12} color={colors.danger} />
+            <AlertTriangle size={12} color="#EF4444" />
           ) : (
             <Calendar size={12} color={colors.textSecondary} />
           )}
           <Text
             style={[
               styles.dueDateText,
-              { color: isOverdue ? colors.danger : colors.textSecondary },
+              { color: isOverdue ? '#EF4444' : colors.textSecondary },
             ]}
           >
             {isOverdue
@@ -146,7 +152,7 @@ export const LoanCard: React.FC<LoanCardProps> = ({
       {/* Progress Track */}
       <View style={styles.progressSection}>
         <View style={styles.progressHeader}>
-          <Text style={[styles.progressLabel, { color: colors.textMuted }]}>
+          <Text style={[styles.progressLabel, { color: colors.textSecondary }]}>
             Settlement Progress
           </Text>
           <Text
@@ -160,29 +166,29 @@ export const LoanCard: React.FC<LoanCardProps> = ({
         </View>
         <ProgressBar
           progress={percentPaid}
-          color={loan.isPaidOff ? colors.success : isBorrowed ? colors.danger : colors.success}
+          color={loan.isPaidOff ? '#10B981' : isBorrowed ? '#EF4444' : '#10B981'}
           height={7}
         />
       </View>
 
       {/* 3-Column Financial Metrics */}
-      <View style={[styles.statsRow, { borderTopColor: colors.borderSubtle }]}>
+      <View style={[styles.statsRow, { borderTopColor: isDark ? '#1E293B' : colors.borderSubtle }]}>
         <View style={styles.statColumn}>
-          <Text style={[styles.statLabel, { color: colors.textMuted }]}>Total</Text>
+          <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Total</Text>
           <Text style={[styles.statValue, { color: colors.text }]} numberOfLines={1}>
             {formatAmount(loan.amount, currencySymbol)}
           </Text>
         </View>
 
         <View style={styles.statColumn}>
-          <Text style={[styles.statLabel, { color: colors.textMuted }]}>Paid</Text>
+          <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Paid</Text>
           <Text style={[styles.statValue, { color: colors.success }]} numberOfLines={1}>
             {formatAmount(loan.amount_paid, currencySymbol)}
           </Text>
         </View>
 
         <View style={styles.statColumn}>
-          <Text style={[styles.statLabel, { color: colors.textMuted }]}>Remaining</Text>
+          <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Remaining</Text>
           <Text
             style={[
               styles.statValue,
@@ -202,7 +208,7 @@ export const LoanCard: React.FC<LoanCardProps> = ({
       </View>
 
       {/* Action Footer: Repay + Edit + Delete */}
-      <View style={[styles.actionFooter, { borderTopColor: colors.borderSubtle }]}>
+      <View style={[styles.actionFooter, { borderTopColor: isDark ? '#1E293B' : colors.borderSubtle }]}>
         {!loan.isPaidOff && onRepay ? (
           <TouchableOpacity
             activeOpacity={0.8}
@@ -214,7 +220,7 @@ export const LoanCard: React.FC<LoanCardProps> = ({
             style={[
               styles.primaryActionBtn,
               {
-                backgroundColor: isBorrowed ? colors.danger : colors.success,
+                backgroundColor: isBorrowed ? '#EF4444' : '#10B981',
               },
             ]}
           >
@@ -229,8 +235,8 @@ export const LoanCard: React.FC<LoanCardProps> = ({
           </TouchableOpacity>
         ) : (
           <View style={styles.settledRow}>
-            <CheckCircle2 size={16} color={colors.success} />
-            <Text style={[styles.settledText, { color: colors.success }]}>
+            <CheckCircle2 size={16} color="#10B981" />
+            <Text style={[styles.settledText, { color: '#10B981' }]}>
               Fully Settled
             </Text>
           </View>
@@ -245,7 +251,14 @@ export const LoanCard: React.FC<LoanCardProps> = ({
               triggerHaptic.selection();
               onEdit();
             }}
-            style={[styles.smallIconBtn, { backgroundColor: colors.surfaceElevated }]}
+            style={[
+              styles.smallIconBtn,
+              {
+                backgroundColor: isDark ? '#0B0F19' : colors.surfaceElevated,
+                borderColor: isDark ? '#1E293B' : colors.borderSubtle,
+                borderWidth: 1,
+              },
+            ]}
             hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
           >
             <Edit2 size={14} color={colors.primary} />
@@ -261,10 +274,17 @@ export const LoanCard: React.FC<LoanCardProps> = ({
               triggerHaptic.warning();
               onDelete();
             }}
-            style={[styles.smallIconBtn, { backgroundColor: colors.dangerLight }]}
+            style={[
+              styles.smallIconBtn,
+              {
+                backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                borderColor: 'rgba(239, 68, 68, 0.3)',
+                borderWidth: 1,
+              },
+            ]}
             hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
           >
-            <Trash2 size={14} color={colors.danger} />
+            <Trash2 size={14} color="#EF4444" />
           </TouchableOpacity>
         )}
       </View>
@@ -274,9 +294,14 @@ export const LoanCard: React.FC<LoanCardProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    marginBottom: Spacing.sm,
+    marginBottom: Spacing.sm + 2,
     padding: Spacing.md,
     borderRadius: Radius.xl,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 3,
   },
   topRow: {
     flexDirection: 'row',
@@ -294,24 +319,25 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   avatarBox: {
-    width: 42,
-    height: 42,
+    width: 40,
+    height: 40,
     borderRadius: Radius.lg,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: Spacing.sm,
+    borderWidth: 1,
   },
   avatarText: {
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: '900',
   },
   name: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '800',
     letterSpacing: -0.2,
   },
   typeText: {
-    fontSize: 12,
+    fontSize: 11,
     marginTop: 2,
     fontWeight: '500',
   },
@@ -321,7 +347,8 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: Radius.sm,
+    borderRadius: Radius.md,
+    borderWidth: 1,
     gap: 5,
     marginBottom: Spacing.sm,
   },
@@ -339,14 +366,14 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   progressLabel: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: 10,
+    fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.3,
   },
   progressPercent: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 11,
+    fontWeight: '800',
   },
   statsRow: {
     flexDirection: 'row',
@@ -359,20 +386,20 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.3,
   },
   statValue: {
     fontSize: 14,
-    fontWeight: '800',
+    fontWeight: '900',
     marginTop: 2,
   },
   actionFooter: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: Spacing.sm + 4,
+    marginTop: Spacing.sm,
     paddingTop: Spacing.sm,
     borderTopWidth: 1,
     gap: Spacing.xs,
@@ -382,8 +409,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    height: 38,
-    borderRadius: Radius.md,
+    height: 36,
+    borderRadius: Radius.lg,
     gap: 6,
   },
   primaryActionText: {
@@ -402,9 +429,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   smallIconBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: Radius.md,
+    width: 36,
+    height: 36,
+    borderRadius: Radius.lg,
     justifyContent: 'center',
     alignItems: 'center',
   },
