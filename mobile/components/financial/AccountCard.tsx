@@ -1,5 +1,10 @@
-﻿import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React from 'react';
+import {
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import {
   Landmark,
   Smartphone,
@@ -7,103 +12,121 @@ import {
   CreditCard,
   PiggyBank,
   ArrowLeftRight,
-  Plus,
-  Edit2,
-  Trash2,
   TrendingUp,
   TrendingDown,
-  ChevronRight,
-  ShieldCheck,
+  Edit2,
+  Trash2,
+  Plus,
+  Users,
+  Shield,
+  Eye,
 } from 'lucide-react-native';
+
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { useTheme } from '../../context/ThemeContext';
+import { triggerHaptic } from '../../utils/haptics';
 import { usePrivacy } from '../../context/PrivacyContext';
 import { Account } from '../../types';
-import { triggerHaptic } from '../../utils/haptics';
-import { Gradients, Radius, Spacing, Typography } from '../../constants/theme';
+import { Radius, Spacing, Typography } from '../../constants/theme';
 
 interface AccountCardProps {
   account: Account;
-  currencySymbol?: string;
   onPress?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
   onTransfer?: () => void;
   onAddTransaction?: () => void;
+  onManageMembers?: () => void;
+  currencySymbol?: string;
 }
 
-const TYPE_CONFIG: Record<string, { label: string; icon: any; color: string; bg: string }> = {
-  bank: {
-    label: 'Bank Account',
+const ACCOUNT_TYPE_CONFIG: Record<string, { icon: any; color: string; bg: string; label: string }> = {
+  Bank: {
     icon: Landmark,
-    color: '#6366F1',
-    bg: 'rgba(99, 102, 241, 0.15)',
+    color: '#3B82F6',
+    bg: 'rgba(59, 130, 246, 0.15)',
+    label: 'Bank Account',
   },
-  mobile_money: {
-    label: 'Mobile Money',
+  'Mobile Money': {
     icon: Smartphone,
     color: '#10B981',
     bg: 'rgba(16, 185, 129, 0.15)',
+    label: 'Mobile Money',
   },
-  cash: {
-    label: 'Cash Wallet',
+  Cash: {
     icon: Wallet,
-    color: '#3B82F6',
-    bg: 'rgba(59, 130, 246, 0.15)',
-  },
-  credit_card: {
-    label: 'Credit Card',
-    icon: CreditCard,
     color: '#F59E0B',
     bg: 'rgba(245, 158, 11, 0.15)',
+    label: 'Cash Wallet',
   },
-  savings: {
-    label: 'Savings Vault',
+  Savings: {
     icon: PiggyBank,
-    color: '#A855F7',
-    bg: 'rgba(168, 85, 247, 0.15)',
+    color: '#8B5CF6',
+    bg: 'rgba(139, 92, 246, 0.15)',
+    label: 'Savings Vault',
+  },
+  'Credit Card': {
+    icon: CreditCard,
+    color: '#EC4899',
+    bg: 'rgba(236, 72, 153, 0.15)',
+    label: 'Credit Card',
   },
 };
 
 export const AccountCard: React.FC<AccountCardProps> = ({
   account,
-  currencySymbol = 'UGX',
   onPress,
   onEdit,
   onDelete,
   onTransfer,
   onAddTransaction,
+  onManageMembers,
+  currencySymbol,
 }) => {
   const { colors, isDark } = useTheme();
   const { formatAmount } = usePrivacy();
+  const config = ACCOUNT_TYPE_CONFIG[account.type] || ACCOUNT_TYPE_CONFIG.Bank;
+  const IconComponent = config.icon;
 
-  const rawType = (account.type || 'cash').toLowerCase();
-  const config = TYPE_CONFIG[rawType] || TYPE_CONFIG.cash;
-  const Icon = config.icon;
-
-  const currentBal = Number(account.balance) || 0;
   const initialBal = Number(account.initial_balance) || 0;
-  const netGrowth = currentBal - initialBal;
+  const netGrowth = Number(account.balance) - initialBal;
+  const isShared = account.is_shared || (account.members_count && account.members_count > 1);
+  const isViewer = account.user_role === 'VIEWER';
 
   return (
     <Card
-      onPress={() => {
-        triggerHaptic.selection();
-        onPress?.();
-      }}
-      style={styles.card}
+      style={[
+        styles.card,
+        {
+          backgroundColor: colors.surface,
+          borderColor: isShared ? colors.primary : colors.border,
+          borderWidth: isDark ? (isShared ? 1.5 : 1) : (isShared ? 1.5 : 0),
+        },
+      ]}
+      onPress={onPress}
     >
-      {/* Top Header Row */}
+      {/* Header Info */}
       <View style={styles.headerRow}>
         <View style={styles.leftInfo}>
           <View style={[styles.iconBox, { backgroundColor: config.bg }]}>
-            <Icon size={22} color={config.color} strokeWidth={2.2} />
+            <IconComponent size={22} color={config.color} />
           </View>
           <View style={styles.titleContainer}>
-            <Text style={[styles.accountName, { color: colors.text }]} numberOfLines={1}>
-              {account.name}
-            </Text>
+            <View style={styles.nameBadgeRow}>
+              <Text style={[styles.accountName, { color: colors.text }]} numberOfLines={1}>
+                {account.name}
+              </Text>
+              {isShared && (
+                <View style={[styles.sharedBadge, { backgroundColor: isDark ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.1)', borderColor: colors.primary }]}>
+                  <Users size={11} color={colors.primary} />
+                  <Text style={[styles.sharedBadgeText, { color: colors.primary }]}>
+                    Shared{account.members_count ? ` (${account.members_count})` : ''}
+                  </Text>
+                </View>
+              )}
+            </View>
+
             <View style={styles.metaRow}>
               {account.bank_name ? (
                 <Text style={[styles.bankNameText, { color: colors.textSecondary }]} numberOfLines={1}>
@@ -181,7 +204,7 @@ export const AccountCard: React.FC<AccountCardProps> = ({
       {/* Action Footer */}
       <View style={[styles.actionsFooter, { borderTopColor: colors.borderSubtle }]}>
         <View style={styles.leftActions}>
-          {onTransfer && (
+          {!isViewer && onTransfer && (
             <TouchableOpacity
               activeOpacity={0.7}
               onPress={(e) => {
@@ -196,7 +219,7 @@ export const AccountCard: React.FC<AccountCardProps> = ({
             </TouchableOpacity>
           )}
 
-          {onAddTransaction && (
+          {!isViewer && onAddTransaction && (
             <TouchableOpacity
               activeOpacity={0.7}
               onPress={(e) => {
@@ -210,10 +233,33 @@ export const AccountCard: React.FC<AccountCardProps> = ({
               <Text style={[styles.quickPillText, { color: colors.textSecondary }]}>Entry</Text>
             </TouchableOpacity>
           )}
+
+          {onManageMembers && (
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={(e) => {
+                e.stopPropagation();
+                triggerHaptic.selection();
+                onManageMembers();
+              }}
+              style={[
+                styles.quickPill,
+                {
+                  backgroundColor: isShared ? (isDark ? 'rgba(99, 102, 241, 0.15)' : 'rgba(99, 102, 241, 0.08)') : colors.surfaceElevated,
+                  borderColor: isShared ? colors.primary : colors.border,
+                },
+              ]}
+            >
+              <Users size={13} color={isShared ? colors.primary : colors.textSecondary} />
+              <Text style={[styles.quickPillText, { color: isShared ? colors.primary : colors.textSecondary }]}>
+                {isShared ? 'Members' : 'Share'}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         <View style={styles.rightActions}>
-          {onEdit && (
+          {!isViewer && onEdit && (
             <TouchableOpacity
               activeOpacity={0.7}
               onPress={(e) => {
@@ -277,10 +323,29 @@ const styles = StyleSheet.create({
   titleContainer: {
     flex: 1,
   },
+  nameBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexWrap: 'wrap',
+  },
   accountName: {
     fontSize: 16,
     fontWeight: '800',
     letterSpacing: -0.2,
+  },
+  sharedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: Radius.sm,
+    borderWidth: 1,
+  },
+  sharedBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
   },
   metaRow: {
     flexDirection: 'row',
@@ -359,6 +424,7 @@ const styles = StyleSheet.create({
   leftActions: {
     flexDirection: 'row',
     gap: 6,
+    flexWrap: 'wrap',
   },
   quickPill: {
     flexDirection: 'row',

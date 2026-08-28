@@ -1,4 +1,4 @@
-﻿export interface User {
+export interface User {
   id: string;
   username: string;
   email?: string | null;
@@ -17,12 +17,43 @@ export interface Account {
   type: string;
   initial_balance: number;
   balance: number;
+  is_owner?: boolean;
+  user_role?: 'OWNER' | 'EDITOR' | 'VIEWER';
+  is_shared?: boolean;
+  members_count?: number;
   created_at: string;
+}
+
+export interface AccountMember {
+  id: string;
+  username: string;
+  email?: string | null;
+  profile_picture?: string | null;
+  role: 'OWNER' | 'EDITOR' | 'VIEWER';
+  joined_at?: string;
+}
+
+export interface AccountInvitation {
+  id: string;
+  accountId: string;
+  inviteCode: string;
+  inviteeEmail?: string | null;
+  role: 'EDITOR' | 'VIEWER';
+  status: 'PENDING' | 'ACCEPTED' | 'EXPIRED' | 'REVOKED';
+  expires_at: string;
+  created_at: string;
+}
+
+export interface AccountMembersResponse {
+  owner: AccountMember;
+  members: AccountMember[];
+  active_invitations: AccountInvitation[];
 }
 
 export interface Transaction {
   id: string;
   accountId: string;
+  created_by_user_id?: string | null;
   type: 'deposit' | 'withdrawal' | 'income' | 'expense';
   amount: number;
   date: string;
@@ -35,6 +66,11 @@ export interface Transaction {
     bank_name?: string | null;
     type: string;
   };
+  creator?: {
+    id: string;
+    username: string;
+    profile_picture?: string | null;
+  } | null;
 }
 
 export interface Budget {
@@ -166,4 +202,3 @@ export interface AnalyticsOverview {
     isOver: boolean;
   }[];
 }
-

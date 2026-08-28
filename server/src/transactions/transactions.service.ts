@@ -19,12 +19,17 @@ export class TransactionsService {
     const limit = Math.max(1, Math.min(100, Number(query.limit) || 20));
     const skip = (page - 1) * limit;
 
-    // Get all user accounts
-    const userAccounts = await this.prisma.account.findMany({
-      where: { user_id: userId },
+    // Get all accessible accounts (personal + shared)
+    const accessibleAccounts = await this.prisma.account.findMany({
+      where: {
+        OR: [
+          { user_id: userId },
+          { members: { some: { userId } } },
+        ],
+      },
       select: { id: true },
     });
-    const userAccountIds = userAccounts.map((a) => a.id);
+    const userAccountIds = accessibleAccounts.map((a) => a.id);
 
     const where: any = {
       accountId: { in: userAccountIds },
@@ -74,6 +79,14 @@ export class TransactionsService {
               name: true,
               bank_name: true,
               type: true,
+              user_id: true,
+            },
+          },
+          creator: {
+            select: {
+              id: true,
+              username: true,
+              profile_picture: true,
             },
           },
         },
@@ -86,6 +99,13 @@ export class TransactionsService {
     const formattedItems = items.map((t) => ({
       ...t,
       amount: Number(t.amount),
+      creator: t.creator
+        ? {
+            id: t.creator.id.toString(),
+            username: t.creator.username,
+            profile_picture: t.creator.profile_picture,
+          }
+        : null,
     }));
 
     return {
@@ -103,7 +123,18 @@ export class TransactionsService {
     const transaction = await this.prisma.transaction.findUnique({
       where: { id },
       include: {
-        account: true,
+        account: {
+          include: {
+            members: true,
+          },
+        },
+        creator: {
+          select: {
+            id: true,
+            username: true,
+            profile_picture: true,
+          },
+        },
       },
     });
 
@@ -111,27 +142,41 @@ export class TransactionsService {
       throw new NotFoundException('Transaction not found');
     }
 
-    if (transaction.account.user_id !== userId) {
+    const isOwner = transaction.account.user_id === userId;
+    const isMember = transaction.account.members.some((m) => m.userId === userId);
+
+    if (!isOwner && !isMember) {
       throw new ForbiddenException('You do not have access to this transaction');
     }
 
     return {
       ...transaction,
       amount: Number(transaction.amount),
+      creator: transaction.creator
+        ? {
+            id: transaction.creator.id.toString(),
+            username: transaction.creator.username,
+            profile_picture: transaction.creator.profile_picture,
+          }
+        : null,
     };
   }
 
   async create(userId: bigint, dto: CreateTransactionDto) {
     const account = await this.prisma.account.findUnique({
       where: { id: dto.accountId },
+      include: { members: true },
     });
 
     if (!account) {
       throw new NotFoundException('Account not found');
     }
 
-    if (account.user_id !== userId) {
-      throw new ForbiddenException('You do not own this account');
+    const isOwner = account.user_id === userId;
+    const membership = account.members.find((m) => m.userId === userId);
+
+    if (!isOwner && (!membership || membership.role === 'VIEWER')) {
+      throw new ForbiddenException('You do not have permission to add transactions to this account');
     }
 
     const normalizedType =
@@ -140,6 +185,7 @@ export class TransactionsService {
     const transaction = await this.prisma.transaction.create({
       data: {
         accountId: account.id,
+        created_by_user_id: userId,
         type: normalizedType,
         amount: dto.amount,
         date: new Date(dto.date),
@@ -154,35 +200,65 @@ export class TransactionsService {
             type: true,
           },
         },
+        creator: {
+          select: {
+            id: true,
+            username: true,
+            profile_picture: true,
+          },
+        },
       },
     });
 
     return {
       ...transaction,
       amount: Number(transaction.amount),
+      creator: transaction.creator
+        ? {
+            id: transaction.creator.id.toString(),
+            username: transaction.creator.username,
+            profile_picture: transaction.creator.profile_picture,
+          }
+        : null,
     };
   }
 
   async update(userId: bigint, id: string, dto: UpdateTransactionDto) {
     const existing = await this.prisma.transaction.findUnique({
       where: { id },
-      include: { account: true },
+      include: {
+        account: {
+          include: { members: true },
+        },
+      },
     });
 
     if (!existing) {
       throw new NotFoundException('Transaction not found');
     }
 
-    if (existing.account.user_id !== userId) {
-      throw new ForbiddenException('You do not own this transaction');
+    const isOwner = existing.account.user_id === userId;
+    const membership = existing.account.members.find((m) => m.userId === userId);
+    const isCreator = existing.created_by_user_id === userId;
+
+    if (!isOwner && (!membership || membership.role === 'VIEWER') && !isCreator) {
+      throw new ForbiddenException('You do not have permission to edit this transaction');
     }
 
     const targetAccount = await this.prisma.account.findUnique({
       where: { id: dto.accountId },
+      include: { members: true },
     });
 
-    if (!targetAccount || targetAccount.user_id !== userId) {
-      throw new ForbiddenException('Invalid target account');
+    if (!targetAccount) {
+      throw new NotFoundException('Target account not found');
+    }
+
+    const isTargetOwner = targetAccount.user_id === userId;
+    const targetMembership = targetAccount.members.find((m) => m.userId === userId);
+
+    if (!isTargetOwner && (!targetMembership || targetMembership.role === 'VIEWER')) {
+      throw new ForbiddenException('Invalid target account or missing permission');
     }
 
     const normalizedType =
@@ -206,27 +282,49 @@ export class TransactionsService {
             type: true,
           },
         },
+        creator: {
+          select: {
+            id: true,
+            username: true,
+            profile_picture: true,
+          },
+        },
       },
     });
 
     return {
       ...updated,
       amount: Number(updated.amount),
+      creator: updated.creator
+        ? {
+            id: updated.creator.id.toString(),
+            username: updated.creator.username,
+            profile_picture: updated.creator.profile_picture,
+          }
+        : null,
     };
   }
 
   async remove(userId: bigint, id: string) {
     const existing = await this.prisma.transaction.findUnique({
       where: { id },
-      include: { account: true },
+      include: {
+        account: {
+          include: { members: true },
+        },
+      },
     });
 
     if (!existing) {
       throw new NotFoundException('Transaction not found');
     }
 
-    if (existing.account.user_id !== userId) {
-      throw new ForbiddenException('You do not own this transaction');
+    const isOwner = existing.account.user_id === userId;
+    const membership = existing.account.members.find((m) => m.userId === userId);
+    const isCreator = existing.created_by_user_id === userId;
+
+    if (!isOwner && (!membership || membership.role === 'VIEWER') && !isCreator) {
+      throw new ForbiddenException('You do not have permission to delete this transaction');
     }
 
     await this.prisma.transaction.delete({

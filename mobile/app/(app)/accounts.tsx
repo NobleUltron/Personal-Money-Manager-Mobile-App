@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Alert,
   FlatList,
@@ -29,6 +29,7 @@ import {
   Trash2,
   Layers,
   ChevronRight,
+  Users,
 } from 'lucide-react-native';
 
 import { useAuth } from '../../context/AuthContext';
@@ -44,6 +45,8 @@ import { Modal } from '../../components/ui/Modal';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { AccountCard } from '../../components/financial/AccountCard';
+import { ManageMembersModal } from '../../components/financial/ManageMembersModal';
+import { JoinSharedWalletModal } from '../../components/financial/JoinSharedWalletModal';
 import { SkeletonList } from '../../components/ui/Skeleton';
 import { triggerHaptic } from '../../utils/haptics';
 import { Account } from '../../types';
@@ -81,6 +84,10 @@ export default function AccountsScreen() {
   const [filterType, setFilterType] = useState('all');
   const [selectedAccountForDetail, setSelectedAccountForDetail] = useState<Account | null>(null);
   const [accountToDelete, setAccountToDelete] = useState<Account | null>(null);
+
+  // Sharing & Member Modals
+  const [manageMembersAccount, setManageMembersAccount] = useState<Account | null>(null);
+  const [joinModalVisible, setJoinModalVisible] = useState<boolean>(false);
 
   // Modal States
   const [modalVisible, setModalVisible] = useState(false);
@@ -160,10 +167,10 @@ export default function AccountsScreen() {
     triggerHaptic.selection();
     setEditingAccount(account);
     setName(account.name);
-    setType(account.type || 'bank');
+    setType(account.type.toLowerCase() || 'bank');
     setBankName(account.bank_name || '');
     setAccountNumber(account.account_number || '');
-    setInitialBalance(account.initial_balance?.toString() || '');
+    setInitialBalance(account.initial_balance ? account.initial_balance.toString() : '');
     setFormError('');
     setModalVisible(true);
   };
@@ -171,13 +178,14 @@ export default function AccountsScreen() {
   const closeModal = () => {
     setModalVisible(false);
     setEditingAccount(null);
+    setFormError('');
   };
 
-  const handleSelectPreset = (preset: typeof PRESET_INSTITUTIONS[0]) => {
+  const handleSelectPreset = (preset: (typeof PRESET_INSTITUTIONS)[0]) => {
     triggerHaptic.selection();
     setName(preset.name);
-    setBankName(preset.bank_name);
     setType(preset.type);
+    setBankName(preset.bank_name);
   };
 
   const handleSave = () => {
@@ -228,6 +236,7 @@ export default function AccountsScreen() {
       cash: 0,
       credit_card: 0,
       savings: 0,
+      shared: 0,
     };
 
     accounts.forEach((acc) => {
@@ -235,6 +244,9 @@ export default function AccountsScreen() {
       total += bal;
       const t = (acc.type || 'cash').toLowerCase();
       if (counts[t] !== undefined) counts[t]++;
+      if (acc.is_shared || (acc.members_count && acc.members_count > 1)) {
+        counts.shared++;
+      }
 
       if (t === 'bank') bank += bal;
       else if (t === 'mobile_money' || t === 'mobile money') momo += bal;
@@ -255,6 +267,9 @@ export default function AccountsScreen() {
   // Filtered Accounts
   const filteredAccounts = useMemo(() => {
     if (filterType === 'all') return accounts;
+    if (filterType === 'shared') {
+      return accounts.filter((a) => a.is_shared || (a.members_count && a.members_count > 1));
+    }
     return accounts.filter((a) => (a.type || 'cash').toLowerCase() === filterType);
   }, [accounts, filterType]);
 
@@ -262,16 +277,36 @@ export default function AccountsScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <Header
         title="Accounts & Wallets"
-        subtitle="Manage your banks, mobile money & cash"
+        subtitle="Manage your banks, mobile money & shared wallets"
         showBack
         rightAction={
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={openCreateModal}
-            style={[styles.addButton, { backgroundColor: colors.primary }]}
-          >
-            <Plus size={20} color="#FFFFFF" strokeWidth={2.5} />
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => {
+                triggerHaptic.selection();
+                setJoinModalVisible(true);
+              }}
+              style={[
+                styles.joinButton,
+                {
+                  backgroundColor: isDark ? 'rgba(99, 102, 241, 0.15)' : 'rgba(99, 102, 241, 0.08)',
+                  borderColor: colors.primary,
+                },
+              ]}
+            >
+              <Users size={14} color={colors.primary} />
+              <Text style={[styles.joinButtonText, { color: colors.primary }]}>Join</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={openCreateModal}
+              style={[styles.addButton, { backgroundColor: colors.primary }]}
+            >
+              <Plus size={18} color="#FFFFFF" strokeWidth={2.5} />
+            </TouchableOpacity>
+          </View>
         }
       />
 
@@ -279,51 +314,42 @@ export default function AccountsScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl
-            refreshing={isRefetching}
-            onRefresh={refetch}
-            tintColor={colors.primary}
-          />
+          <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />
         }
       >
-        {/* 1. Hero Total Liquid Portfolio Card */}
+        {/* 1. Hero Portfolio Summary Card */}
         <LinearGradient
           colors={isDark ? ['#1E1B4B', '#0F172A'] : ['#EEF2FF', '#FFFFFF']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={[styles.heroCard, { borderColor: colors.border }]}
+          style={[styles.heroCard, { borderColor: isDark ? 'rgba(99, 102, 241, 0.3)' : colors.border }]}
         >
           <View style={styles.heroTopRow}>
             <View>
               <Text style={[styles.heroLabel, { color: colors.textSecondary }]}>
-                Total Liquid Wealth
+                Total Net Liquidity
               </Text>
-              <Text style={[styles.heroAmount, { color: colors.text }]}>
+              <Text style={[styles.heroTotalAmount, { color: colors.text }]} numberOfLines={1}>
                 {formatAmount(totalLiquidBalance, currencySymbol)}
-              </Text>
-              <Text style={[styles.heroSubText, { color: colors.textSecondary }]}>
-                Across {accounts.length} active {accounts.length === 1 ? 'wallet' : 'wallets & accounts'}
               </Text>
             </View>
 
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => router.push('/(app)/transfer')}
-              style={[styles.transferShortcutBtn, { backgroundColor: colors.primary }]}
-            >
-              <ArrowLeftRight size={14} color="#FFFFFF" strokeWidth={2.4} />
-              <Text style={styles.transferShortcutBtnText}>Transfer</Text>
-            </TouchableOpacity>
+            <View style={[styles.heroBadge, { backgroundColor: colors.primaryLight }]}>
+              <Sparkles size={14} color={colors.primary} />
+              <Text style={[styles.heroBadgeText, { color: colors.primary }]}>
+                {accounts.length} Active {accounts.length === 1 ? 'Wallet' : 'Wallets'}
+              </Text>
+            </View>
           </View>
 
-          {/* Multi-segment Balance Share Track */}
+          {/* Allocation Progress Bar */}
           {totalLiquidBalance > 0 && (
-            <View style={styles.shareTrackContainer}>
-              <View style={[styles.shareTrack, { backgroundColor: colors.surfaceElevated }]}>
+            <View style={styles.progressContainer}>
+              <View style={[styles.progressBarBackground, { backgroundColor: colors.surfaceElevated }]}>
                 {bankTotal > 0 && (
                   <View
                     style={[
-                      styles.shareSegment,
+                      styles.progressSegment,
                       { width: `${(bankTotal / totalLiquidBalance) * 100}%`, backgroundColor: '#6366F1' },
                     ]}
                   />
@@ -331,7 +357,7 @@ export default function AccountsScreen() {
                 {momoTotal > 0 && (
                   <View
                     style={[
-                      styles.shareSegment,
+                      styles.progressSegment,
                       { width: `${(momoTotal / totalLiquidBalance) * 100}%`, backgroundColor: '#10B981' },
                     ]}
                   />
@@ -339,7 +365,7 @@ export default function AccountsScreen() {
                 {cashTotal > 0 && (
                   <View
                     style={[
-                      styles.shareSegment,
+                      styles.progressSegment,
                       { width: `${(cashTotal / totalLiquidBalance) * 100}%`, backgroundColor: '#3B82F6' },
                     ]}
                   />
@@ -347,7 +373,7 @@ export default function AccountsScreen() {
                 {cardsTotal > 0 && (
                   <View
                     style={[
-                      styles.shareSegment,
+                      styles.progressSegment,
                       { width: `${(cardsTotal / totalLiquidBalance) * 100}%`, backgroundColor: '#F59E0B' },
                     ]}
                   />
@@ -395,6 +421,7 @@ export default function AccountsScreen() {
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
             {[
               { id: 'all', label: `All (${accounts.length})` },
+              { id: 'shared', label: `Shared (${typeCounts.shared || 0})` },
               { id: 'bank', label: `Banks (${typeCounts.bank || 0})` },
               { id: 'mobile_money', label: `Mobile Money (${typeCounts.mobile_money || 0})` },
               { id: 'cash', label: `Cash (${typeCounts.cash || 0})` },
@@ -439,7 +466,7 @@ export default function AccountsScreen() {
           <EmptyState
             icon={<Landmark size={36} color={colors.textMuted} />}
             title="No Accounts Found"
-            description="Add your first bank account, mobile money wallet, or cash balance to start tracking."
+            description="Add your first bank account, mobile money wallet, or join a shared wallet to start tracking."
             actionTitle="Add New Account"
             onAction={openCreateModal}
           />
@@ -452,8 +479,9 @@ export default function AccountsScreen() {
               onPress={() => setSelectedAccountForDetail(item)}
               onEdit={() => openEditModal(item)}
               onDelete={() => handleDelete(item)}
-              onTransfer={() => router.push('/(app)/transfer')}
+              onTransfer={() => router.push({ pathname: '/(app)/transfer', params: { fromId: item.id } })}
               onAddTransaction={() => openQuickEntry()}
+              onManageMembers={() => setManageMembersAccount(item)}
             />
           ))
         )}
@@ -636,9 +664,9 @@ export default function AccountsScreen() {
               </View>
 
               <View style={styles.detailGridItem}>
-                <Text style={[styles.detailGridLabel, { color: colors.textSecondary }]}>Status</Text>
-                <Text style={[styles.detailGridValue, { color: colors.success }]}>
-                  Active & Synced
+                <Text style={[styles.detailGridLabel, { color: colors.textSecondary }]}>Sharing Status</Text>
+                <Text style={[styles.detailGridValue, { color: selectedAccountForDetail.is_shared ? colors.primary : colors.textSecondary }]}>
+                  {selectedAccountForDetail.is_shared ? `Shared (${selectedAccountForDetail.members_count || 2} members)` : 'Private'}
                 </Text>
               </View>
             </View>
@@ -646,44 +674,58 @@ export default function AccountsScreen() {
             {/* Quick Actions */}
             <View style={{ gap: Spacing.sm }}>
               <Button
-                title="Transfer Money From/To Here"
+                title="Manage Members & Sharing (👥)"
+                variant="secondary"
                 size="md"
                 onPress={() => {
+                  const target = selectedAccountForDetail;
                   setSelectedAccountForDetail(null);
-                  router.push('/(app)/transfer');
+                  setManageMembersAccount(target);
                 }}
               />
 
-              <View style={[styles.detailSecondaryActions, { borderTopColor: colors.borderSubtle }]}>
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={() => {
-                    const acc = selectedAccountForDetail;
-                    setSelectedAccountForDetail(null);
-                    openEditModal(acc);
-                  }}
-                  style={[styles.actionBtn, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}
-                >
-                  <Edit2 size={15} color={colors.primary} />
-                  <Text style={[styles.actionBtnText, { color: colors.primary }]}>Edit Account</Text>
-                </TouchableOpacity>
+              <Button
+                title="Transfer Money"
+                size="md"
+                onPress={() => {
+                  const accId = selectedAccountForDetail.id;
+                  setSelectedAccountForDetail(null);
+                  router.push({ pathname: '/(app)/transfer', params: { fromId: accId } });
+                }}
+              />
 
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={() => handleDelete(selectedAccountForDetail)}
-                  style={[styles.actionBtn, { backgroundColor: colors.dangerLight, borderColor: 'rgba(239, 68, 68, 0.2)' }]}
-                >
-                  <Trash2 size={15} color={colors.danger} />
-                  <Text style={[styles.actionBtnText, { color: colors.danger }]}>Delete</Text>
-                </TouchableOpacity>
-              </View>
+              <Button
+                title="Add Transaction"
+                variant="outline"
+                size="md"
+                onPress={() => {
+                  const accId = selectedAccountForDetail.id;
+                  setSelectedAccountForDetail(null);
+                  openQuickEntry();
+                }}
+              />
             </View>
           </View>
         </Modal>
       )}
-      {/* MODAL 3: Custom Confirm Delete Dialog */}
+
+      {/* MODAL 3: Manage Members & Sharing */}
+      <ManageMembersModal
+        visible={!!manageMembersAccount}
+        onClose={() => setManageMembersAccount(null)}
+        account={manageMembersAccount}
+      />
+
+      {/* MODAL 4: Join Shared Wallet */}
+      <JoinSharedWalletModal
+        visible={joinModalVisible}
+        onClose={() => setJoinModalVisible(false)}
+        onSuccess={() => refetch()}
+      />
+
+      {/* Confirmation Dialog: Delete */}
       <ConfirmDialog
-        visible={accountToDelete !== null}
+        visible={!!accountToDelete}
         onClose={() => setAccountToDelete(null)}
         onConfirm={() => {
           if (accountToDelete) {
@@ -692,10 +734,9 @@ export default function AccountsScreen() {
           }
         }}
         title="Delete Account"
-        message={`Are you sure you want to delete "${accountToDelete?.name}"? Transactions associated with this account will remain in logs.`}
-        confirmText="Delete Account"
+        message={`Are you sure you want to delete "${accountToDelete?.name}"? All associated transactions will be permanently deleted.`}
+        confirmText="Delete"
         type="danger"
-        loading={deleteMutation.isPending}
       />
     </SafeAreaView>
   );
@@ -705,86 +746,82 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  scrollContent: {
+    padding: Spacing.md,
+    paddingBottom: 100,
+  },
   addButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 36,
+    height: 36,
+    borderRadius: Radius.md,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  scrollContent: {
-    padding: Spacing.md,
-    paddingBottom: Spacing.xxl * 3,
+  joinButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+  },
+  joinButtonText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
   heroCard: {
-    borderRadius: Radius.xxl,
-    padding: Spacing.md,
+    padding: Spacing.lg,
+    borderRadius: Radius.xl,
     borderWidth: 1,
     marginBottom: Spacing.md,
-    shadowColor: '#6366F1',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
   },
   heroTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: Spacing.md,
   },
   heroLabel: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    marginBottom: 4,
   },
-  heroAmount: {
-    fontSize: 28,
-    fontWeight: '800',
-    letterSpacing: -0.5,
+  heroTotalAmount: {
+    fontSize: 26,
+    fontWeight: '900',
+    marginTop: 4,
+    letterSpacing: -0.8,
   },
-  heroSubText: {
-    fontSize: 12,
-    fontWeight: '500',
-    marginTop: 2,
-  },
-  transferShortcutBtn: {
+  heroBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: Radius.full,
-    shadowColor: '#6366F1',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
   },
-  transferShortcutBtnText: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#FFFFFF',
+  heroBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
   },
-  shareTrackContainer: {
-    marginVertical: Spacing.xs,
-    marginBottom: Spacing.md,
+  progressContainer: {
+    marginTop: Spacing.md,
   },
-  shareTrack: {
+  progressBarBackground: {
+    height: 6,
+    borderRadius: 3,
     flexDirection: 'row',
-    height: 8,
-    borderRadius: 4,
     overflow: 'hidden',
   },
-  shareSegment: {
+  progressSegment: {
     height: '100%',
   },
   heroStatsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingTop: Spacing.sm,
+    marginTop: Spacing.md,
+    paddingTop: Spacing.md,
     borderTopWidth: 1,
   },
   heroStatItem: {
@@ -793,8 +830,7 @@ const styles = StyleSheet.create({
   statDotRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    marginBottom: 2,
+    gap: 5,
   },
   statDot: {
     width: 6,
@@ -807,19 +843,43 @@ const styles = StyleSheet.create({
   },
   statValue: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '800',
+    marginTop: 2,
   },
   filterSection: {
-    marginBottom: Spacing.sm,
+    marginBottom: Spacing.md,
   },
   filterRow: {
-    gap: 6,
-    paddingVertical: 4,
+    gap: Spacing.xs,
   },
   filterChip: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     paddingVertical: 7,
     borderRadius: Radius.full,
+    borderWidth: 1,
+  },
+  presetChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+  },
+  inputLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    marginBottom: 6,
+  },
+  typeChipsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  typeChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: Radius.md,
     borderWidth: 1,
   },
   errorBox: {
@@ -828,32 +888,8 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   errorText: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  inputLabel: {
     fontSize: 12,
-    fontWeight: '700',
-    marginBottom: 6,
-  },
-  presetChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-  },
-  typeChipsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  typeChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
+    fontWeight: '600',
   },
   detailCard: {
     gap: Spacing.md,
@@ -861,59 +897,39 @@ const styles = StyleSheet.create({
   detailTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
   detailAccName: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '800',
   },
   detailBankLabel: {
     fontSize: 12,
+    fontWeight: '500',
     marginTop: 2,
   },
   detailBalanceAmount: {
-    fontSize: 22,
-    fontWeight: '800',
+    fontSize: 20,
+    fontWeight: '900',
   },
   detailInfoGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    borderRadius: Radius.xl,
-    padding: Spacing.md,
+    borderRadius: Radius.lg,
     borderWidth: 1,
+    padding: Spacing.md,
     gap: Spacing.md,
   },
   detailGridItem: {
-    width: '45%',
+    width: '46%',
   },
   detailGridLabel: {
     fontSize: 11,
     fontWeight: '600',
-    marginBottom: 2,
   },
   detailGridValue: {
     fontSize: 13,
-    fontWeight: '700',
-  },
-  detailSecondaryActions: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-    paddingTop: Spacing.sm,
-    borderTopWidth: 1,
-  },
-  actionBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-  },
-  actionBtnText: {
-    fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '800',
+    marginTop: 2,
   },
 });
-

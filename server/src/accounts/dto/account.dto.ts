@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, Min } from 'class-validator';
 
 export class CreateAccountDto {
   @ApiProperty({ example: 'Centenary Bank' })
@@ -55,4 +55,30 @@ export class UpdateAccountDto {
   @Min(0)
   @IsOptional()
   initial_balance?: number;
+}
+
+export class CreateInvitationDto {
+  @ApiProperty({ example: 'EDITOR', enum: ['EDITOR', 'VIEWER'], default: 'EDITOR' })
+  @IsEnum(['EDITOR', 'VIEWER'])
+  @IsOptional()
+  role?: 'EDITOR' | 'VIEWER';
+
+  @ApiProperty({ example: 'partner@example.com', required: false })
+  @IsString()
+  @IsOptional()
+  invitee_email?: string;
+}
+
+export class UpdateMemberRoleDto {
+  @ApiProperty({ example: 'VIEWER', enum: ['EDITOR', 'VIEWER'] })
+  @IsEnum(['EDITOR', 'VIEWER'])
+  @IsNotEmpty()
+  role: 'EDITOR' | 'VIEWER';
+}
+
+export class JoinAccountDto {
+  @ApiProperty({ example: 'FAM-8492' })
+  @IsString()
+  @IsNotEmpty()
+  invite_code: string;
 }

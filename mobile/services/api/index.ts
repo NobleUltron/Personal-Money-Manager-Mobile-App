@@ -1,6 +1,9 @@
 import { apiClient } from './client';
 import {
   Account,
+  AccountMember,
+  AccountInvitation,
+  AccountMembersResponse,
   AnalyticsOverview,
   Budget,
   DashboardSummary,
@@ -55,7 +58,7 @@ export const accountsApi = {
   },
 
   async getOne(id: string): Promise<Account> {
-    const res = await apiClient.get(`/api/accounts/${id}`);
+    const res = await apiClient.get('/api/accounts/' + id);
     return res.data;
   },
 
@@ -65,16 +68,40 @@ export const accountsApi = {
   },
 
   async update(id: string, data: { name: string; bank_name?: string; account_number?: string; type: string; initial_balance?: number }): Promise<Account> {
-    const res = await apiClient.patch(`/api/accounts/${id}`, data);
+    const res = await apiClient.patch('/api/accounts/' + id, data);
     return res.data;
   },
 
   async remove(id: string): Promise<{ message: string }> {
-    const res = await apiClient.delete(`/api/accounts/${id}`);
+    const res = await apiClient.delete('/api/accounts/' + id);
+    return res.data;
+  },
+
+  async createInvitation(accountId: string, data: { role?: 'EDITOR' | 'VIEWER'; invitee_email?: string } = {}): Promise<AccountInvitation> {
+    const res = await apiClient.post('/api/accounts/' + accountId + '/invitations', data);
+    return res.data;
+  },
+
+  async getMembers(accountId: string): Promise<AccountMembersResponse> {
+    const res = await apiClient.get('/api/accounts/' + accountId + '/members');
+    return res.data;
+  },
+
+  async updateMemberRole(accountId: string, targetUserId: string, role: 'EDITOR' | 'VIEWER'): Promise<{ id: string; username: string; role: string }> {
+    const res = await apiClient.patch('/api/accounts/' + accountId + '/members/' + targetUserId, { role });
+    return res.data;
+  },
+
+  async removeMember(accountId: string, targetUserId: string): Promise<{ message: string }> {
+    const res = await apiClient.delete('/api/accounts/' + accountId + '/members/' + targetUserId);
+    return res.data;
+  },
+
+  async joinAccount(invite_code: string): Promise<Account> {
+    const res = await apiClient.post('/api/accounts/join', { invite_code });
     return res.data;
   },
 };
-
 export const transactionsApi = {
   async getAll(params?: {
     page?: number;

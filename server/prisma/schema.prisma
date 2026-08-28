@@ -25,6 +25,9 @@ model User {
   updated_at            DateTime       @updatedAt
 
   accounts              Account[]
+  account_memberships   AccountMember[]
+  created_invitations   AccountInvitation[]
+  created_transactions  Transaction[]       @relation("TransactionCreator")
   budgets               Budget[]
   subscriptions         Subscription[]
   loans                 Loan[]
@@ -34,35 +37,71 @@ model User {
 }
 
 model Account {
-  id              String         @id @default(uuid())
+  id              String              @id @default(uuid())
   user_id         BigInt
   name            String
   bank_name       String?
   account_number  String?
-  type            String         @default("Checking")
-  initial_balance Decimal        @default(0.00) @db.Decimal(15, 2)
-  created_at      DateTime       @default(now())
-  updated_at      DateTime       @updatedAt
+  type            String              @default("Checking")
+  initial_balance Decimal             @default(0.00) @db.Decimal(15, 2)
+  created_at      DateTime            @default(now())
+  updated_at      DateTime            @updatedAt
 
-  user            User           @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user            User                @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  members         AccountMember[]
+  invitations     AccountInvitation[]
   transactions    Transaction[]
   subscriptions   Subscription[]
 
   @@map("accounts")
 }
 
-model Transaction {
+model AccountMember {
   id         String   @id @default(uuid())
   accountId  String
-  type       String   // deposit, withdrawal, income, expense
-  amount     Decimal  @db.Decimal(15, 2)
-  date       DateTime @db.Date
-  reason     String?  @default("")
-  category   String   @default("Other")
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  userId     BigInt
+  role       String   @default("EDITOR") // OWNER, EDITOR, VIEWER
+  joined_at  DateTime @default(now())
 
   account    Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([accountId, userId])
+  @@map("account_members")
+}
+
+model AccountInvitation {
+  id                  String   @id @default(uuid())
+  accountId           String
+  invitedByUserId     BigInt
+  inviteCode          String   @unique
+  inviteeEmail        String?
+  role                String   @default("EDITOR") // EDITOR, VIEWER
+  status              String   @default("PENDING") // PENDING, ACCEPTED, EXPIRED, REVOKED
+  expires_at          DateTime
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
+
+  account             Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  invited_by          User     @relation(fields: [invitedByUserId], references: [id], onDelete: Cascade)
+
+  @@map("account_invitations")
+}
+
+model Transaction {
+  id                  String   @id @default(uuid())
+  accountId           String
+  created_by_user_id  BigInt?
+  type                String   // deposit, withdrawal, income, expense
+  amount              Decimal  @db.Decimal(15, 2)
+  date                DateTime @db.Date
+  reason              String?  @default("")
+  category            String   @default("Other")
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
+
+  account             Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  creator             User?    @relation("TransactionCreator", fields: [created_by_user_id], references: [id], onDelete: SetNull)
 
   @@map("transactions")
 }
@@ -140,4 +179,3 @@ model PasswordResetToken {
 
   @@map("password_reset_tokens")
 }
-
