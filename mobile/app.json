@@ -23,7 +23,11 @@
       "adaptiveIcon": {
         "backgroundColor": "#020617"
       },
-      "package": "com.personalmoneymanager.app"
+      "package": "com.personalmoneymanager.app",
+      "permissions": [
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT"
+      ]
     },
     "web": {
       "bundler": "metro"
@@ -40,9 +44,10 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "e6906906-9f8b-4d0c-b019-53dee6aef382"
+        "projectId": "c30e3a28-66f7-450d-bf98-672f9da34108"
       }
     },
-    "icon": "./assets/images/icon.png"
+    "icon": "./assets/images/icon.png",
+    "owner": "noble_muwonge"
   }
 }
