@@ -26,6 +26,8 @@ import {
   Calendar,
   Layers,
   ChevronRight,
+  ChevronDown,
+  Check,
   Edit2,
   Trash2,
   Tag,
@@ -71,6 +73,7 @@ export default function BudgetsScreen() {
   const [category, setCategory] = useState('Food & Dining');
   const [amount, setAmount] = useState('');
   const [formError, setFormError] = useState('');
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
 
   // 1. Fetch Budgets
   const { data: budgets = [], isLoading, refetch, isRefetching } = useQuery({
@@ -115,6 +118,7 @@ export default function BudgetsScreen() {
     setCategory('Food & Dining');
     setAmount('');
     setFormError('');
+    setShowCategoryDropdown(false);
     setModalVisible(true);
   };
 
@@ -454,49 +458,105 @@ export default function BudgetsScreen() {
           </View>
         ) : null}
 
-        {/* Category chips */}
+        {/* Category Dropdown Selector */}
         <View style={{ marginBottom: Spacing.md }}>
           <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Select Category *</Text>
-          <View style={styles.chipsRow}>
-            {CATEGORIES.map((cat) => (
-              <TouchableOpacity
-                key={cat.name}
-                activeOpacity={0.7}
-                disabled={!!editingBudget}
-                onPress={() => {
-                  triggerHaptic.selection();
-                  setCategory(cat.name);
-                }}
-                style={[
-                  styles.categoryChip,
-                  {
-                    backgroundColor: category === cat.name ? colors.primary : (isDark ? '#0B0F19' : colors.surfaceElevated),
-                    borderColor: category === cat.name ? colors.primary : (isDark ? '#1E293B' : colors.borderSubtle),
-                    borderWidth: 1.2,
-                    opacity: editingBudget && category !== cat.name ? 0.4 : 1,
-                  },
-                ]}
-              >
-                <CategoryIcon
-                  categoryName={cat.name}
-                  size={18}
-                  iconSize={12}
-                  showBackground={false}
-                  customColor={category === cat.name ? '#FFFFFF' : cat.color}
-                  style={{ marginRight: 6 }}
-                />
-                <Text
-                  style={{
-                    color: category === cat.name ? '#FFFFFF' : colors.text,
-                    fontSize: 12,
-                    fontWeight: category === cat.name ? '700' : '600',
-                  }}
-                >
-                  {cat.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+          <TouchableOpacity
+            activeOpacity={0.75}
+            disabled={!!editingBudget}
+            onPress={() => {
+              triggerHaptic.selection();
+              setShowCategoryDropdown(!showCategoryDropdown);
+            }}
+            style={[
+              styles.dropdownSelector,
+              {
+                backgroundColor: isDark ? '#0B0F19' : colors.surfaceElevated,
+                borderColor: showCategoryDropdown ? colors.primary : (isDark ? '#1E293B' : colors.borderSubtle),
+                borderWidth: 1.2,
+                opacity: editingBudget ? 0.7 : 1,
+              },
+            ]}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, gap: 10 }}>
+              <CategoryIcon
+                categoryName={category}
+                size={22}
+                iconSize={14}
+                showBackground={false}
+                customColor={colors.primary}
+              />
+              <Text style={[styles.dropdownValueText, { color: colors.text }]}>
+                {category}
+              </Text>
+            </View>
+            {!editingBudget && (
+              <ChevronDown
+                size={18}
+                color={colors.textSecondary}
+                style={{ transform: [{ rotate: showCategoryDropdown ? '180deg' : '0deg' }] }}
+              />
+            )}
+          </TouchableOpacity>
+
+          {/* Collapsible Dropdown List */}
+          {showCategoryDropdown && (
+            <View
+              style={[
+                styles.dropdownList,
+                {
+                  backgroundColor: isDark ? '#0B0F19' : colors.surfaceElevated,
+                  borderColor: isDark ? '#1E293B' : colors.borderSubtle,
+                  borderWidth: 1.2,
+                },
+              ]}
+            >
+              <ScrollView style={{ maxHeight: 210 }} nestedScrollEnabled showsVerticalScrollIndicator={false}>
+                {CATEGORIES.map((cat) => {
+                  const isSelected = category === cat.name;
+                  return (
+                    <TouchableOpacity
+                      key={cat.name}
+                      activeOpacity={0.7}
+                      onPress={() => {
+                        triggerHaptic.selection();
+                        setCategory(cat.name);
+                        setShowCategoryDropdown(false);
+                      }}
+                      style={[
+                        styles.dropdownItem,
+                        isSelected && {
+                          backgroundColor: isDark ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.1)',
+                        },
+                        { borderBottomColor: isDark ? '#1E293B' : colors.borderSubtle },
+                      ]}
+                    >
+                      <CategoryIcon
+                        categoryName={cat.name}
+                        size={20}
+                        iconSize={13}
+                        showBackground={false}
+                        customColor={isSelected ? colors.primary : cat.color}
+                        style={{ marginRight: 10 }}
+                      />
+                      <Text
+                        style={[
+                          styles.dropdownItemText,
+                          {
+                            color: isSelected ? colors.primary : colors.text,
+                            fontWeight: isSelected ? '800' : '600',
+                          },
+                        ]}
+                      >
+                        {cat.name}
+                      </Text>
+                      {isSelected && <Check size={16} color={colors.primary} strokeWidth={2.6} />}
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          )}
         </View>
 
         {/* Amount Input */}
@@ -862,5 +922,32 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
   },
+  dropdownSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.md,
+    height: 48,
+    borderRadius: Radius.lg,
+  },
+  dropdownValueText: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  dropdownList: {
+    marginTop: 6,
+    borderRadius: Radius.lg,
+    overflow: 'hidden',
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 11,
+    borderBottomWidth: 1,
+  },
+  dropdownItemText: {
+    fontSize: 13,
+    flex: 1,
+  },
 });
-
