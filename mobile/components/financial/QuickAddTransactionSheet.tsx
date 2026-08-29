@@ -401,7 +401,7 @@ export const QuickAddTransactionSheet: React.FC<QuickAddTransactionSheetProps> =
 
   return (
     <RNModal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <SafeAreaView style={[styles.container, { backgroundColor: isDark ? '#020617' : colors.background }]}>
         {/* Top Header */}
         <View style={styles.topHeader}>
           <TouchableOpacity
@@ -410,13 +410,13 @@ export const QuickAddTransactionSheet: React.FC<QuickAddTransactionSheetProps> =
               triggerHaptic.light();
               onClose();
             }}
-            style={[styles.closeBtn, { backgroundColor: colors.surfaceElevated }]}
+            style={[styles.closeBtn, { backgroundColor: isDark ? '#0F172A' : colors.surfaceElevated, borderColor: isDark ? '#1E293B' : colors.borderSubtle, borderWidth: 1 }]}
           >
             <X size={20} color={colors.text} />
           </TouchableOpacity>
 
           {/* Type Segmented Pill */}
-          <View style={[styles.typePillContainer, { backgroundColor: colors.surfaceElevated }]}>
+          <View style={[styles.typePillContainer, { backgroundColor: isDark ? '#0B0F19' : colors.surfaceElevated, borderColor: isDark ? '#1E293B' : colors.borderSubtle, borderWidth: 1 }]}>
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={() => {
@@ -469,7 +469,7 @@ export const QuickAddTransactionSheet: React.FC<QuickAddTransactionSheetProps> =
               setShowAccountPicker(false);
               setShowCategoryPicker(false);
             }}
-            style={[styles.dateBadge, { backgroundColor: colors.surfaceElevated }]}
+            style={[styles.dateBadge, { backgroundColor: showDatePicker ? (isDark ? 'rgba(99, 102, 241, 0.25)' : 'rgba(99, 102, 241, 0.15)') : (isDark ? '#0B0F19' : colors.surfaceElevated), borderColor: showDatePicker ? colors.primary : (isDark ? '#1E293B' : colors.borderSubtle), borderWidth: 1 }]}
           >
             <Calendar size={14} color={colors.primary} />
             <Text style={[styles.dateBadgeText, { color: colors.text }]}>{getDateLabel()}</Text>
@@ -498,7 +498,7 @@ export const QuickAddTransactionSheet: React.FC<QuickAddTransactionSheetProps> =
           </View>
 
           {/* Reason / Note Input */}
-          <View style={[styles.noteInputContainer, { backgroundColor: colors.surfaceElevated }]}>
+          <View style={[styles.noteInputContainer, { backgroundColor: isDark ? '#0F172A' : colors.surfaceElevated, borderColor: isDark ? '#1E293B' : colors.borderSubtle, borderWidth: 1.2 }]}>
             <TextInput
               placeholder="Name / Note (e.g. Coffee at airport, Uber, Groceries)"
               placeholderTextColor={colors.textMuted}
@@ -523,8 +523,8 @@ export const QuickAddTransactionSheet: React.FC<QuickAddTransactionSheetProps> =
               style={[
                 styles.selectorPill,
                 {
-                  backgroundColor: showAccountPicker ? colors.primaryLight : colors.surfaceElevated,
-                  borderColor: showAccountPicker ? colors.primary : colors.border,
+                  backgroundColor: showAccountPicker ? (isDark ? 'rgba(99, 102, 241, 0.2)' : colors.primaryLight) : (isDark ? '#0F172A' : colors.surfaceElevated),
+                  borderColor: showAccountPicker ? colors.primary : (isDark ? '#1E293B' : colors.borderSubtle),
                 },
               ]}
             >
@@ -547,8 +547,8 @@ export const QuickAddTransactionSheet: React.FC<QuickAddTransactionSheetProps> =
               style={[
                 styles.selectorPill,
                 {
-                  backgroundColor: showCategoryPicker ? colors.primaryLight : colors.surfaceElevated,
-                  borderColor: showCategoryPicker ? colors.primary : colors.border,
+                  backgroundColor: showCategoryPicker ? (isDark ? 'rgba(99, 102, 241, 0.2)' : colors.primaryLight) : (isDark ? '#0F172A' : colors.surfaceElevated),
+                  borderColor: showCategoryPicker ? colors.primary : (isDark ? '#1E293B' : colors.borderSubtle),
                 },
               ]}
             >
@@ -562,7 +562,7 @@ export const QuickAddTransactionSheet: React.FC<QuickAddTransactionSheetProps> =
 
           {/* Expanded Calendar & Date Picker Drawer */}
           {showDatePicker && (
-            <View style={[styles.drawerBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={[styles.drawerBox, { backgroundColor: isDark ? '#0F172A' : colors.surface, borderColor: isDark ? '#1E293B' : colors.border, borderWidth: 1.2 }]}>
               {/* Quick Shortcuts */}
               <View style={styles.dateShortcutsRow}>
                 <TouchableOpacity
@@ -686,7 +686,7 @@ export const QuickAddTransactionSheet: React.FC<QuickAddTransactionSheetProps> =
 
           {/* Expanded Account Picker Drawer */}
           {showAccountPicker && (
-            <View style={[styles.drawerBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={[styles.drawerBox, { backgroundColor: isDark ? '#0F172A' : colors.surface, borderColor: isDark ? '#1E293B' : colors.border, borderWidth: 1.2 }]}>
               <Text style={[styles.drawerTitle, { color: colors.textSecondary }]}>Choose Wallet</Text>
               <View style={styles.chipsWrapper}>
                 {accounts?.map((acc) => {
@@ -703,8 +703,8 @@ export const QuickAddTransactionSheet: React.FC<QuickAddTransactionSheetProps> =
                       style={[
                         styles.drawerChip,
                         {
-                          backgroundColor: isSelected ? colors.primary : colors.surfaceElevated,
-                          borderColor: isSelected ? colors.primary : colors.border,
+                          backgroundColor: isSelected ? colors.primary : (isDark ? '#0B0F19' : colors.surfaceElevated),
+                          borderColor: isSelected ? colors.primary : (isDark ? '#1E293B' : colors.borderSubtle),
                         },
                       ]}
                     >
@@ -726,7 +726,7 @@ export const QuickAddTransactionSheet: React.FC<QuickAddTransactionSheetProps> =
 
           {/* Expanded Category Picker Drawer */}
           {showCategoryPicker && (
-            <View style={[styles.drawerBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={[styles.drawerBox, { backgroundColor: isDark ? '#0F172A' : colors.surface, borderColor: isDark ? '#1E293B' : colors.border, borderWidth: 1.2 }]}>
               <Text style={[styles.drawerTitle, { color: colors.textSecondary }]}>Choose Category</Text>
               <View style={styles.chipsWrapper}>
                 {CATEGORIES.map((cat) => {
@@ -743,8 +743,8 @@ export const QuickAddTransactionSheet: React.FC<QuickAddTransactionSheetProps> =
                       style={[
                         styles.drawerChip,
                         {
-                          backgroundColor: isSelected ? colors.primary : colors.surfaceElevated,
-                          borderColor: isSelected ? colors.primary : colors.border,
+                          backgroundColor: isSelected ? colors.primary : (isDark ? '#0B0F19' : colors.surfaceElevated),
+                          borderColor: isSelected ? colors.primary : (isDark ? '#1E293B' : colors.borderSubtle),
                         },
                       ]}
                     >
@@ -774,7 +774,7 @@ export const QuickAddTransactionSheet: React.FC<QuickAddTransactionSheetProps> =
         </ScrollView>
 
         {/* Built-in Custom Keypad & Save Button */}
-        <View style={[styles.keypadContainer, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
+        <View style={[styles.keypadContainer, { backgroundColor: isDark ? '#0B0F19' : colors.surface, borderTopColor: isDark ? '#1E293B' : colors.borderSubtle }]}>
           {/* Save Button — always pinned above keypad */}
           <View style={styles.saveBtnRow}>
             <TouchableOpacity
@@ -783,7 +783,7 @@ export const QuickAddTransactionSheet: React.FC<QuickAddTransactionSheetProps> =
               disabled={isLoading}
               style={[
                 styles.saveBtn,
-                { backgroundColor: isLoading ? colors.textMuted : colors.primary, opacity: isLoading ? 0.7 : 1 },
+                { backgroundColor: isLoading ? colors.textMuted : (type === 'deposit' ? '#10B981' : '#6366F1'), opacity: isLoading ? 0.7 : 1, shadowColor: type === 'deposit' ? '#10B981' : '#6366F1' },
               ]}
             >
               {isLoading ? (
@@ -811,7 +811,7 @@ export const QuickAddTransactionSheet: React.FC<QuickAddTransactionSheetProps> =
                     key={key}
                     activeOpacity={0.6}
                     onPress={() => handleKeyPress(key)}
-                    style={[styles.keypadKey, { backgroundColor: colors.surfaceElevated }]}
+                    style={[styles.keypadKey, { backgroundColor: isDark ? '#0F172A' : colors.surfaceElevated, borderColor: isDark ? '#1E293B' : colors.borderSubtle, borderWidth: 1 }]}
                   >
                     {key === 'backspace' ? (
                       <Delete size={22} color={colors.text} />
@@ -1077,8 +1077,32 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '700',
   },
+  amountDisplayCard: {
+    padding: Spacing.md,
+    borderRadius: Radius.xl,
+    borderWidth: 1.2,
+    alignItems: 'center',
+    width: '100%',
+  },
+  amountHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  currencyPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+  },
+  currencyPillText: {
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  flowSubtext: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
 });
-
-
-
-
