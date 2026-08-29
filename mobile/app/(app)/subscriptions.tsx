@@ -630,7 +630,7 @@ export default function SubscriptionsScreen() {
               </Text>
             </View>
 
-            <View style={[styles.detailInfoGrid, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}>
+            <View style={[styles.detailInfoGrid, { backgroundColor: isDark ? '#0F172A' : colors.surfaceElevated, borderColor: isDark ? '#1E293B' : colors.borderSubtle, borderWidth: 1 }]}>
               <View style={styles.detailGridItem}>
                 <Text style={[styles.detailGridLabel, { color: colors.textSecondary }]}>Frequency</Text>
                 <Text style={[styles.detailGridValue, { color: colors.text }]}>
