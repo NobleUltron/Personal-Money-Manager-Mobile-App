@@ -47,21 +47,21 @@ export const Modal: React.FC<ModalProps> = ({
                 style={[
                   styles.modalContent,
                   {
-                    backgroundColor: colors.surface,
-                    borderColor: colors.border,
-                    borderWidth: isDark ? 1 : 0,
+                    backgroundColor: isDark ? '#0F172A' : '#FFFFFF',
+                    borderColor: isDark ? '#1E293B' : '#E2E8F0',
+                    borderWidth: 1.2,
                   },
                 ]}
               >
                 {/* Modal Header */}
-                <View style={[styles.header, { borderBottomColor: colors.border }]}>
+                <View style={[styles.header, { borderBottomColor: isDark ? '#1E293B' : colors.borderSubtle }]}>
                   <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>
                     {title}
                   </Text>
                   <TouchableOpacity
                     activeOpacity={0.7}
                     onPress={onClose}
-                    style={[styles.closeButton, { backgroundColor: colors.surfaceElevated }]}
+                    style={[styles.closeButton, { backgroundColor: isDark ? '#0B0F19' : colors.surfaceElevated, borderColor: isDark ? '#1E293B' : colors.borderSubtle, borderWidth: 1 }]}
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   >
                     <X size={18} color={colors.textSecondary} />

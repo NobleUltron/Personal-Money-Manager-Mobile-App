@@ -470,8 +470,9 @@ export default function BudgetsScreen() {
                 style={[
                   styles.categoryChip,
                   {
-                    backgroundColor: category === cat.name ? colors.primary : colors.surfaceElevated,
-                    borderColor: category === cat.name ? colors.primary : colors.border,
+                    backgroundColor: category === cat.name ? colors.primary : (isDark ? '#0B0F19' : colors.surfaceElevated),
+                    borderColor: category === cat.name ? colors.primary : (isDark ? '#1E293B' : colors.borderSubtle),
+                    borderWidth: 1.2,
                     opacity: editingBudget && category !== cat.name ? 0.4 : 1,
                   },
                 ]}
@@ -516,9 +517,9 @@ export default function BudgetsScreen() {
                 key={presetVal}
                 activeOpacity={0.7}
                 onPress={() => handleSetPresetLimit(presetVal)}
-                style={[styles.presetChip, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}
+                style={[styles.presetChip, { backgroundColor: amount === presetVal.toString() ? colors.primary : (isDark ? '#0B0F19' : colors.surfaceElevated), borderColor: amount === presetVal.toString() ? colors.primary : (isDark ? '#1E293B' : colors.borderSubtle), borderWidth: 1.2 }]}
               >
-                <Text style={[styles.presetText, { color: colors.primary }]}>
+                <Text style={[styles.presetText, { color: amount === presetVal.toString() ? '#FFFFFF' : colors.primary, fontWeight: '800' }]}>
                   {presetVal >= 1000000 ? `${presetVal / 1000000}M` : `${presetVal / 1000}k`}
                 </Text>
               </TouchableOpacity>
