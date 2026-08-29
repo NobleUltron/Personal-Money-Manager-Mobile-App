@@ -730,9 +730,9 @@ export default function SubscriptionsScreen() {
               ]}
             >
               {[
-                { id: 'monthly', label: 'Monthly (Every Month)', icon: '??' },
-                { id: 'yearly', label: 'Yearly (Annual Bill)', icon: '??' },
-                { id: 'weekly', label: 'Weekly (Every 7 Days)', icon: '?' },
+                { id: 'monthly', label: 'Monthly (Every Month)' },
+                { id: 'yearly', label: 'Yearly (Annual Bill)' },
+                { id: 'weekly', label: 'Weekly (Every 7 Days)' },
               ].map((item) => {
                 const isSelected = frequency === item.id;
                 return (
@@ -752,7 +752,13 @@ export default function SubscriptionsScreen() {
                       { borderBottomColor: isDark ? '#1E293B' : colors.borderSubtle },
                     ]}
                   >
-                    <Text style={{ fontSize: 16, marginRight: 10 }}>{item.icon}</Text>
+                    {item.id === 'monthly' ? (
+                      <Calendar size={16} color={isSelected ? colors.primary : colors.textSecondary} style={{ marginRight: 10 }} />
+                    ) : item.id === 'yearly' ? (
+                      <Repeat size={16} color={isSelected ? colors.primary : colors.textSecondary} style={{ marginRight: 10 }} />
+                    ) : (
+                      <Clock size={16} color={isSelected ? colors.primary : colors.textSecondary} style={{ marginRight: 10 }} />
+                    )}
                     <Text
                       style={[
                         styles.dropdownItemText,
