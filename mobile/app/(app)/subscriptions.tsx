@@ -15,6 +15,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
   Plus,
+  Check,
+  ChevronDown,
   Repeat,
   Flame,
   Calendar,
@@ -88,7 +90,9 @@ export default function SubscriptionsScreen() {
   const [nextDueDate, setNextDueDate] = useState(new Date().toISOString().split('T')[0]);
   const [category, setCategory] = useState('Entertainment');
   const [formError, setFormError] = useState('');
+  const [showTemplateDropdown, setShowTemplateDropdown] = useState(false);
   const [showAccountDropdown, setShowAccountDropdown] = useState(false);
+  const [showFrequencyDropdown, setShowFrequencyDropdown] = useState(false);
 
   // 1. Fetch Subscriptions & Accounts
   const { data: subscriptions, isLoading, refetch, isRefetching } = useQuery({
@@ -480,37 +484,94 @@ export default function SubscriptionsScreen() {
           </View>
         ) : null}
 
-        {/* Preset Quick Chips (only on create) */}
+        {/* Quick Templates Dropdown */}
         {!editingSub && (
           <View style={{ marginBottom: Spacing.md }}>
-            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Quick Templates</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
-              {PRESET_TEMPLATES.map((tpl) => (
-                <TouchableOpacity
-                  key={tpl.name}
-                  activeOpacity={0.7}
-                  onPress={() => handleSelectTemplate(tpl)}
-                  style={[
-                    styles.templateChip,
-                    {
-                      backgroundColor: name === tpl.name ? colors.primaryLight : colors.surfaceElevated,
-                      borderColor: name === tpl.name ? colors.primary : colors.border,
-                    },
-                  ]}
-                >
-                  <Text style={{ fontSize: 13 }}>{tpl.icon}</Text>
-                  <Text
-                    style={{
-                      fontSize: 12,
-                      fontWeight: name === tpl.name ? '700' : '600',
-                      color: name === tpl.name ? colors.primary : colors.text,
-                    }}
-                  >
-                    {tpl.name}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Quick Templates (Auto-fill)</Text>
+            <TouchableOpacity
+              activeOpacity={0.75}
+              onPress={() => {
+                triggerHaptic.selection();
+                setShowTemplateDropdown(!showTemplateDropdown);
+                setShowAccountDropdown(false);
+                setShowFrequencyDropdown(false);
+              }}
+              style={[
+                styles.dropdownSelector,
+                {
+                  backgroundColor: isDark ? '#0B0F19' : colors.surfaceElevated,
+                  borderColor: showTemplateDropdown ? colors.primary : (isDark ? '#1E293B' : colors.borderSubtle),
+                  borderWidth: 1.2,
+                },
+              ]}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, gap: 10 }}>
+                <Sparkles size={18} color={colors.primary} />
+                <Text style={[styles.dropdownValueText, { color: name ? colors.text : colors.textMuted }]}>
+                  {name ? `Selected: ${name}` : 'Choose from 10 Popular Templates...'}
+                </Text>
+              </View>
+              <ChevronDown
+                size={18}
+                color={colors.textSecondary}
+                style={{ transform: [{ rotate: showTemplateDropdown ? '180deg' : '0deg' }] }}
+              />
+            </TouchableOpacity>
+
+            {showTemplateDropdown && (
+              <View
+                style={[
+                  styles.dropdownList,
+                  {
+                    backgroundColor: isDark ? '#0B0F19' : colors.surfaceElevated,
+                    borderColor: isDark ? '#1E293B' : colors.borderSubtle,
+                    borderWidth: 1.2,
+                  },
+                ]}
+              >
+                <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled showsVerticalScrollIndicator={false}>
+                  {PRESET_TEMPLATES.map((tpl) => {
+                    const isSelected = name === tpl.name;
+                    return (
+                      <TouchableOpacity
+                        key={tpl.name}
+                        activeOpacity={0.7}
+                        onPress={() => {
+                          handleSelectTemplate(tpl);
+                          setShowTemplateDropdown(false);
+                        }}
+                        style={[
+                          styles.dropdownItem,
+                          isSelected && {
+                            backgroundColor: isDark ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.1)',
+                          },
+                          { borderBottomColor: isDark ? '#1E293B' : colors.borderSubtle },
+                        ]}
+                      >
+                        <Text style={{ fontSize: 16, marginRight: 10 }}>{tpl.icon}</Text>
+                        <View style={{ flex: 1 }}>
+                          <Text
+                            style={[
+                              styles.dropdownItemText,
+                              {
+                                color: isSelected ? colors.primary : colors.text,
+                                fontWeight: isSelected ? '800' : '600',
+                              },
+                            ]}
+                          >
+                            {tpl.name}
+                          </Text>
+                          <Text style={{ fontSize: 11, color: colors.textSecondary }}>
+                            {tpl.category} � {tpl.frequency}
+                          </Text>
+                        </View>
+                        {isSelected && <Check size={16} color={colors.primary} strokeWidth={2.6} />}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            )}
           </View>
         )}
 
@@ -529,61 +590,186 @@ export default function SubscriptionsScreen() {
           keyboardType="decimal-pad"
         />
 
-        {/* Account Chips */}
+        {/* Account Dropdown */}
         <View style={{ marginBottom: Spacing.md }}>
           <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Debit From Account *</Text>
-          <View style={styles.chipsRow}>
-            {accounts?.map((acc) => (
-              <TouchableOpacity
-                key={acc.id}
-                activeOpacity={0.7}
-                onPress={() => {
-                  triggerHaptic.selection();
-                  setAccountId(acc.id);
-                }}
-                style={[
-                  styles.chip,
-                  {
-                    backgroundColor: accountId === acc.id ? colors.primary : colors.surfaceElevated,
-                    borderColor: accountId === acc.id ? colors.primary : colors.border,
-                  },
-                ]}
-              >
-                <Landmark size={12} color={accountId === acc.id ? '#FFFFFF' : colors.text} style={{ marginRight: 4 }} />
-                <Text style={{ color: accountId === acc.id ? '#FFFFFF' : colors.text, fontSize: 12, fontWeight: '700' }}>
-                  {acc.name}
+          <TouchableOpacity
+            activeOpacity={0.75}
+            onPress={() => {
+              triggerHaptic.selection();
+              setShowAccountDropdown(!showAccountDropdown);
+              setShowTemplateDropdown(false);
+              setShowFrequencyDropdown(false);
+            }}
+            style={[
+              styles.dropdownSelector,
+              {
+                backgroundColor: isDark ? '#0B0F19' : colors.surfaceElevated,
+                borderColor: showAccountDropdown ? colors.primary : (isDark ? '#1E293B' : colors.borderSubtle),
+                borderWidth: 1.2,
+              },
+            ]}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, gap: 10 }}>
+              <Landmark size={18} color={colors.primary} />
+              <Text style={[styles.dropdownValueText, { color: colors.text }]}>
+                {accounts?.find((a) => a.id === accountId)?.name || 'Select Wallet / Account'}
+              </Text>
+              {accountId && (
+                <Text style={{ color: colors.textSecondary, fontSize: 12, marginLeft: 'auto', marginRight: 8 }}>
+                  {formatAmount(accounts?.find((a) => a.id === accountId)?.balance, currencySymbol)}
                 </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+              )}
+            </View>
+            <ChevronDown
+              size={18}
+              color={colors.textSecondary}
+              style={{ transform: [{ rotate: showAccountDropdown ? '180deg' : '0deg' }] }}
+            />
+          </TouchableOpacity>
+
+          {showAccountDropdown && (
+            <View
+              style={[
+                styles.dropdownList,
+                {
+                  backgroundColor: isDark ? '#0B0F19' : colors.surfaceElevated,
+                  borderColor: isDark ? '#1E293B' : colors.borderSubtle,
+                  borderWidth: 1.2,
+                },
+              ]}
+            >
+              <ScrollView style={{ maxHeight: 180 }} nestedScrollEnabled showsVerticalScrollIndicator={false}>
+                {accounts?.map((acc) => {
+                  const isSelected = accountId === acc.id;
+                  return (
+                    <TouchableOpacity
+                      key={acc.id}
+                      activeOpacity={0.7}
+                      onPress={() => {
+                        triggerHaptic.selection();
+                        setAccountId(acc.id);
+                        setShowAccountDropdown(false);
+                      }}
+                      style={[
+                        styles.dropdownItem,
+                        isSelected && {
+                          backgroundColor: isDark ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.1)',
+                        },
+                        { borderBottomColor: isDark ? '#1E293B' : colors.borderSubtle },
+                      ]}
+                    >
+                      <Landmark size={16} color={isSelected ? colors.primary : colors.textSecondary} style={{ marginRight: 10 }} />
+                      <View style={{ flex: 1 }}>
+                        <Text
+                          style={[
+                            styles.dropdownItemText,
+                            {
+                              color: isSelected ? colors.primary : colors.text,
+                              fontWeight: isSelected ? '800' : '600',
+                            },
+                          ]}
+                        >
+                          {acc.name}
+                        </Text>
+                        <Text style={{ fontSize: 11, color: colors.textSecondary }}>
+                          Balance: {formatAmount(acc.balance, currencySymbol)}
+                        </Text>
+                      </View>
+                      {isSelected && <Check size={16} color={colors.primary} strokeWidth={2.6} />}
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          )}
         </View>
 
-        {/* Frequency Chips */}
+        {/* Frequency Dropdown */}
         <View style={{ marginBottom: Spacing.md }}>
           <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Billing Frequency</Text>
-          <View style={styles.chipsRow}>
-            {(['monthly', 'yearly', 'weekly'] as const).map((freq) => (
-              <TouchableOpacity
-                key={freq}
-                activeOpacity={0.7}
-                onPress={() => {
-                  triggerHaptic.selection();
-                  setFrequency(freq);
-                }}
-                style={[
-                  styles.chip,
-                  {
-                    backgroundColor: frequency === freq ? colors.primary : colors.surfaceElevated,
-                    borderColor: frequency === freq ? colors.primary : colors.border,
-                  },
-                ]}
-              >
-                <Text style={{ color: frequency === freq ? '#FFFFFF' : colors.text, fontSize: 12, fontWeight: '700' }}>
-                  {freq.toUpperCase()}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+          <TouchableOpacity
+            activeOpacity={0.75}
+            onPress={() => {
+              triggerHaptic.selection();
+              setShowFrequencyDropdown(!showFrequencyDropdown);
+              setShowTemplateDropdown(false);
+              setShowAccountDropdown(false);
+            }}
+            style={[
+              styles.dropdownSelector,
+              {
+                backgroundColor: isDark ? '#0B0F19' : colors.surfaceElevated,
+                borderColor: showFrequencyDropdown ? colors.primary : (isDark ? '#1E293B' : colors.borderSubtle),
+                borderWidth: 1.2,
+              },
+            ]}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, gap: 10 }}>
+              <Repeat size={18} color={colors.primary} />
+              <Text style={[styles.dropdownValueText, { color: colors.text }]}>
+                {frequency === 'monthly' ? 'Monthly (Every Month)' : frequency === 'yearly' ? 'Yearly (Annual)' : 'Weekly (Every 7 Days)'}
+              </Text>
+            </View>
+            <ChevronDown
+              size={18}
+              color={colors.textSecondary}
+              style={{ transform: [{ rotate: showFrequencyDropdown ? '180deg' : '0deg' }] }}
+            />
+          </TouchableOpacity>
+
+          {showFrequencyDropdown && (
+            <View
+              style={[
+                styles.dropdownList,
+                {
+                  backgroundColor: isDark ? '#0B0F19' : colors.surfaceElevated,
+                  borderColor: isDark ? '#1E293B' : colors.borderSubtle,
+                  borderWidth: 1.2,
+                },
+              ]}
+            >
+              {[
+                { id: 'monthly', label: 'Monthly (Every Month)', icon: '??' },
+                { id: 'yearly', label: 'Yearly (Annual Bill)', icon: '??' },
+                { id: 'weekly', label: 'Weekly (Every 7 Days)', icon: '?' },
+              ].map((item) => {
+                const isSelected = frequency === item.id;
+                return (
+                  <TouchableOpacity
+                    key={item.id}
+                    activeOpacity={0.7}
+                    onPress={() => {
+                      triggerHaptic.selection();
+                      setFrequency(item.id as any);
+                      setShowFrequencyDropdown(false);
+                    }}
+                    style={[
+                      styles.dropdownItem,
+                      isSelected && {
+                        backgroundColor: isDark ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.1)',
+                      },
+                      { borderBottomColor: isDark ? '#1E293B' : colors.borderSubtle },
+                    ]}
+                  >
+                    <Text style={{ fontSize: 16, marginRight: 10 }}>{item.icon}</Text>
+                    <Text
+                      style={[
+                        styles.dropdownItemText,
+                        {
+                          color: isSelected ? colors.primary : colors.text,
+                          fontWeight: isSelected ? '800' : '600',
+                        },
+                      ]}
+                    >
+                      {item.label}
+                    </Text>
+                    {isSelected && <Check size={16} color={colors.primary} strokeWidth={2.6} />}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
         </View>
 
         {/* Next Due Date Picker */}
