@@ -216,9 +216,9 @@ export const StatementExportModal: React.FC<StatementExportModalProps> = ({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <SafeAreaView style={[styles.container, { backgroundColor: isDark ? '#0B1120' : '#F8FAFC' }]}>
+      <SafeAreaView style={[styles.container, { backgroundColor: isDark ? '#020617' : '#F8FAFC' }]}>
         {/* Fixed Header */}
-        <View style={[styles.header, { backgroundColor: isDark ? '#0F172A' : '#FFFFFF', borderBottomColor: colors.borderSubtle }]}>
+        <View style={[styles.header, { backgroundColor: isDark ? '#0B0F19' : '#FFFFFF', borderBottomColor: isDark ? '#1E293B' : colors.borderSubtle }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
             <View style={[styles.iconCircle, { backgroundColor: isExcel ? 'rgba(16, 185, 129, 0.15)' : 'rgba(99, 102, 241, 0.15)' }]}>
               {isExcel ? (
@@ -237,7 +237,7 @@ export const StatementExportModal: React.FC<StatementExportModalProps> = ({
           <TouchableOpacity
             activeOpacity={0.7}
             onPress={onClose}
-            style={[styles.closeBtn, { backgroundColor: colors.surfaceElevated }]}
+            style={[styles.closeBtn, { backgroundColor: isDark ? '#0F172A' : colors.surfaceElevated, borderColor: isDark ? '#1E293B' : colors.borderSubtle, borderWidth: 1 }]}
           >
             <X size={16} color={colors.textSecondary} />
           </TouchableOpacity>
@@ -262,8 +262,8 @@ export const StatementExportModal: React.FC<StatementExportModalProps> = ({
               style={[
                 styles.formatCard,
                 {
-                  backgroundColor: format === 'pdf' ? (isDark ? 'rgba(99, 102, 241, 0.18)' : 'rgba(99, 102, 241, 0.1)') : (isDark ? '#1E293B' : '#FFFFFF'),
-                  borderColor: format === 'pdf' ? colors.primary : colors.border,
+                  backgroundColor: format === 'pdf' ? (isDark ? 'rgba(99, 102, 241, 0.18)' : 'rgba(99, 102, 241, 0.1)') : (isDark ? '#0F172A' : '#FFFFFF'),
+                  borderColor: format === 'pdf' ? colors.primary : (isDark ? '#1E293B' : colors.borderSubtle), borderWidth: 1.2,
                 },
               ]}
             >
@@ -295,8 +295,8 @@ export const StatementExportModal: React.FC<StatementExportModalProps> = ({
               style={[
                 styles.formatCard,
                 {
-                  backgroundColor: format === 'excel' ? (isDark ? 'rgba(16, 185, 129, 0.18)' : 'rgba(16, 185, 129, 0.1)') : (isDark ? '#1E293B' : '#FFFFFF'),
-                  borderColor: format === 'excel' ? '#10B981' : colors.border,
+                  backgroundColor: format === 'excel' ? (isDark ? 'rgba(16, 185, 129, 0.18)' : 'rgba(16, 185, 129, 0.1)') : (isDark ? '#0F172A' : '#FFFFFF'),
+                  borderColor: format === 'excel' ? '#10B981' : (isDark ? '#1E293B' : colors.borderSubtle), borderWidth: 1.2,
                 },
               ]}
             >
@@ -344,8 +344,8 @@ export const StatementExportModal: React.FC<StatementExportModalProps> = ({
                   style={[
                     styles.chip,
                     {
-                      backgroundColor: isSelected ? colors.primary : (isDark ? '#1E293B' : '#FFFFFF'),
-                      borderColor: isSelected ? colors.primary : colors.border,
+                      backgroundColor: isSelected ? colors.primary : (isDark ? '#0F172A' : '#FFFFFF'),
+                      borderColor: isSelected ? colors.primary : (isDark ? '#1E293B' : colors.borderSubtle), borderWidth: 1.2,
                     },
                   ]}
                 >
@@ -379,8 +379,8 @@ export const StatementExportModal: React.FC<StatementExportModalProps> = ({
                   style={[
                     styles.chip,
                     {
-                      backgroundColor: isSelected ? colors.primary : (isDark ? '#1E293B' : '#FFFFFF'),
-                      borderColor: isSelected ? colors.primary : colors.border,
+                      backgroundColor: isSelected ? colors.primary : (isDark ? '#0F172A' : '#FFFFFF'),
+                      borderColor: isSelected ? colors.primary : (isDark ? '#1E293B' : colors.borderSubtle), borderWidth: 1.2,
                     },
                   ]}
                 >
@@ -412,8 +412,8 @@ export const StatementExportModal: React.FC<StatementExportModalProps> = ({
                   style={[
                     styles.chip,
                     {
-                      backgroundColor: selectedAccountId === 'all' ? colors.primary : (isDark ? '#1E293B' : '#FFFFFF'),
-                      borderColor: selectedAccountId === 'all' ? colors.primary : colors.border,
+                      backgroundColor: selectedAccountId === 'all' ? colors.primary : (isDark ? '#0F172A' : '#FFFFFF'),
+                      borderColor: selectedAccountId === 'all' ? colors.primary : (isDark ? '#1E293B' : colors.borderSubtle), borderWidth: 1.2,
                     },
                   ]}
                 >
@@ -435,8 +435,8 @@ export const StatementExportModal: React.FC<StatementExportModalProps> = ({
                       style={[
                         styles.chip,
                         {
-                          backgroundColor: isSelected ? colors.primary : (isDark ? '#1E293B' : '#FFFFFF'),
-                          borderColor: isSelected ? colors.primary : colors.border,
+                          backgroundColor: isSelected ? colors.primary : (isDark ? '#0F172A' : '#FFFFFF'),
+                          borderColor: isSelected ? colors.primary : (isDark ? '#1E293B' : colors.borderSubtle), borderWidth: 1.2,
                         },
                       ]}
                     >
@@ -455,8 +455,9 @@ export const StatementExportModal: React.FC<StatementExportModalProps> = ({
             style={[
               styles.previewBox,
               {
-                backgroundColor: isDark ? '#111C30' : '#F1F5F9',
-                borderColor: colors.borderSubtle,
+                backgroundColor: isDark ? '#0B0F19' : '#F1F5F9',
+                borderColor: isDark ? '#1E293B' : colors.borderSubtle,
+                borderWidth: 1.2,
               },
             ]}
           >
@@ -520,7 +521,7 @@ export const StatementExportModal: React.FC<StatementExportModalProps> = ({
             </View>
 
             {/* Net Cash Flow Row */}
-            <View style={[styles.previewNetRow, { borderTopColor: colors.borderSubtle }]}>
+            <View style={[styles.previewNetRow, { borderTopColor: isDark ? '#1E293B' : colors.borderSubtle }]}>
               <Text style={[styles.previewNetLabel, { color: colors.textSecondary }]}>Net Cash Flow:</Text>
               <Text
                 style={[
@@ -539,8 +540,8 @@ export const StatementExportModal: React.FC<StatementExportModalProps> = ({
           style={[
             styles.footer,
             {
-              backgroundColor: isDark ? '#0F172A' : '#FFFFFF',
-              borderTopColor: colors.borderSubtle,
+              backgroundColor: isDark ? '#0B0F19' : '#FFFFFF',
+              borderTopColor: isDark ? '#1E293B' : colors.borderSubtle,
             },
           ]}
         >
@@ -550,7 +551,7 @@ export const StatementExportModal: React.FC<StatementExportModalProps> = ({
               onPress={handlePrintPreview}
               style={[
                 styles.previewBtn,
-                { backgroundColor: colors.surfaceElevated, borderColor: colors.border },
+                { backgroundColor: isDark ? '#0F172A' : colors.surfaceElevated, borderColor: isDark ? '#1E293B' : colors.borderSubtle, borderWidth: 1 },
               ]}
             >
               <Printer size={18} color={colors.text} />
