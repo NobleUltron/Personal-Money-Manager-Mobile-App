@@ -418,7 +418,7 @@ export default function SubscriptionsScreen() {
               return (
                 <TouchableOpacity
                   key={f.id}
-                  activeOpacity={0.7}
+                  activeOpacity={0.7} delayPressIn={0}
                   onPress={() => {
                     triggerHaptic.selection();
                     setFilterType(f.id as any);
@@ -529,13 +529,12 @@ export default function SubscriptionsScreen() {
                   },
                 ]}
               >
-                <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled showsVerticalScrollIndicator={false}>
-                  {PRESET_TEMPLATES.map((tpl) => {
+                {PRESET_TEMPLATES.map((tpl) => {
                     const isSelected = name === tpl.name;
                     return (
                       <TouchableOpacity
                         key={tpl.name}
-                        activeOpacity={0.7}
+                        activeOpacity={0.7} delayPressIn={0}
                         onPress={() => {
                           handleSelectTemplate(tpl);
                           setShowTemplateDropdown(false);
@@ -569,7 +568,6 @@ export default function SubscriptionsScreen() {
                       </TouchableOpacity>
                     );
                   })}
-                </ScrollView>
               </View>
             )}
           </View>
@@ -639,13 +637,12 @@ export default function SubscriptionsScreen() {
                 },
               ]}
             >
-              <ScrollView style={{ maxHeight: 180 }} nestedScrollEnabled showsVerticalScrollIndicator={false}>
-                {accounts?.map((acc) => {
+              {accounts?.map((acc) => {
                   const isSelected = accountId === acc.id;
                   return (
                     <TouchableOpacity
                       key={acc.id}
-                      activeOpacity={0.7}
+                      activeOpacity={0.7} delayPressIn={0}
                       onPress={() => {
                         triggerHaptic.selection();
                         setAccountId(acc.id);
@@ -680,7 +677,6 @@ export default function SubscriptionsScreen() {
                     </TouchableOpacity>
                   );
                 })}
-              </ScrollView>
             </View>
           )}
         </View>
@@ -738,7 +734,7 @@ export default function SubscriptionsScreen() {
                 return (
                   <TouchableOpacity
                     key={item.id}
-                    activeOpacity={0.7}
+                    activeOpacity={0.7} delayPressIn={0}
                     onPress={() => {
                       triggerHaptic.selection();
                       setFrequency(item.id as any);
@@ -873,7 +869,7 @@ export default function SubscriptionsScreen() {
 
             <View style={[styles.detailSecondaryActions, { borderTopColor: colors.borderSubtle }]}>
               <TouchableOpacity
-                activeOpacity={0.7}
+                activeOpacity={0.7} delayPressIn={0}
                 onPress={() => {
                   const s = selectedSubForDetail;
                   setSelectedSubForDetail(null);
@@ -886,7 +882,7 @@ export default function SubscriptionsScreen() {
               </TouchableOpacity>
 
               <TouchableOpacity
-                activeOpacity={0.7}
+                activeOpacity={0.7} delayPressIn={0}
                 onPress={() => handleDelete(selectedSubForDetail)}
                 style={[styles.secondaryActionBtn, { backgroundColor: colors.dangerLight, borderColor: 'rgba(239, 68, 68, 0.2)' }]}
               >

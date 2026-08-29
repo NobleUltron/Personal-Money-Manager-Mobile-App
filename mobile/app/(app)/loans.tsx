@@ -479,7 +479,7 @@ export default function LoansScreen() {
                 {/* Strategy Switcher */}
                 <View style={styles.strategySwitchRow}>
                   <TouchableOpacity
-                    activeOpacity={0.7}
+                    activeOpacity={0.7} delayPressIn={0}
                     onPress={() => {
                       triggerHaptic.selection();
                       setPayoffStrategy('snowball');
@@ -503,7 +503,7 @@ export default function LoansScreen() {
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    activeOpacity={0.7}
+                    activeOpacity={0.7} delayPressIn={0}
                     onPress={() => {
                       triggerHaptic.selection();
                       setPayoffStrategy('avalanche');
@@ -572,7 +572,7 @@ export default function LoansScreen() {
               return (
                 <TouchableOpacity
                   key={f.id}
-                  activeOpacity={0.7}
+                  activeOpacity={0.7} delayPressIn={0}
                   onPress={() => {
                     triggerHaptic.selection();
                     setFilterType(f.id as any);
@@ -643,7 +643,7 @@ export default function LoansScreen() {
         {/* Type Toggle: Borrowed (I Owe) vs Lent (Owed to Me) */}
         <View style={styles.typeToggleRow}>
           <TouchableOpacity
-            activeOpacity={0.7}
+            activeOpacity={0.7} delayPressIn={0}
             onPress={() => {
               triggerHaptic.selection();
               setLoanType('borrowed');
@@ -668,7 +668,7 @@ export default function LoansScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            activeOpacity={0.7}
+            activeOpacity={0.7} delayPressIn={0}
             onPress={() => {
               triggerHaptic.selection();
               setLoanType('lent');
@@ -729,7 +729,7 @@ export default function LoansScreen() {
         {!editingLoan && (
           <>
             <TouchableOpacity
-              activeOpacity={0.7}
+              activeOpacity={0.7} delayPressIn={0}
               onPress={() => {
                 triggerHaptic.selection();
                 setSyncAccount(!syncAccount);
@@ -793,13 +793,12 @@ export default function LoansScreen() {
                       },
                     ]}
                   >
-                    <ScrollView style={{ maxHeight: 180 }} nestedScrollEnabled showsVerticalScrollIndicator={false}>
-                      {accounts.map((acc) => {
+                    {accounts.map((acc) => {
                         const isSelected = accountId === acc.id;
                         return (
                           <TouchableOpacity
                             key={acc.id}
-                            activeOpacity={0.7}
+                            activeOpacity={0.7} delayPressIn={0}
                             onPress={() => {
                               triggerHaptic.selection();
                               setAccountId(acc.id);
@@ -834,7 +833,6 @@ export default function LoansScreen() {
                           </TouchableOpacity>
                         );
                       })}
-                    </ScrollView>
                   </View>
                 )}
               </View>
@@ -884,7 +882,7 @@ export default function LoansScreen() {
             ].map((item) => (
               <TouchableOpacity
                 key={item.label}
-                activeOpacity={0.7}
+                activeOpacity={0.7} delayPressIn={0}
                 onPress={() => handleQuickRepayPercent(item.val)}
                 style={[styles.quickPercentBtn, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}
               >
@@ -905,7 +903,7 @@ export default function LoansScreen() {
 
           {/* Sync Account Checkbox */}
           <TouchableOpacity
-            activeOpacity={0.7}
+            activeOpacity={0.7} delayPressIn={0}
             onPress={() => {
               triggerHaptic.selection();
               setRepaySyncAccount(!repaySyncAccount);
@@ -969,13 +967,12 @@ export default function LoansScreen() {
                     },
                   ]}
                 >
-                  <ScrollView style={{ maxHeight: 180 }} nestedScrollEnabled showsVerticalScrollIndicator={false}>
-                    {accounts.map((acc) => {
+                  {accounts.map((acc) => {
                       const isSelected = repayAccountId === acc.id;
                       return (
                         <TouchableOpacity
                           key={acc.id}
-                          activeOpacity={0.7}
+                          activeOpacity={0.7} delayPressIn={0}
                           onPress={() => {
                             triggerHaptic.selection();
                             setRepayAccountId(acc.id);
@@ -1010,7 +1007,6 @@ export default function LoansScreen() {
                         </TouchableOpacity>
                       );
                     })}
-                  </ScrollView>
                 </View>
               )}
             </View>
@@ -1095,7 +1091,7 @@ export default function LoansScreen() {
 
             <View style={[styles.detailSecondaryActions, { borderTopColor: colors.borderSubtle }]}>
               <TouchableOpacity
-                activeOpacity={0.7}
+                activeOpacity={0.7} delayPressIn={0}
                 onPress={() => {
                   const l = selectedLoanForDetail;
                   setSelectedLoanForDetail(null);
@@ -1108,7 +1104,7 @@ export default function LoansScreen() {
               </TouchableOpacity>
 
               <TouchableOpacity
-                activeOpacity={0.7}
+                activeOpacity={0.7} delayPressIn={0}
                 onPress={() => handleDelete(selectedLoanForDetail)}
                 style={[styles.actionBtn, { backgroundColor: colors.dangerLight, borderColor: 'rgba(239, 68, 68, 0.2)' }]}
               >

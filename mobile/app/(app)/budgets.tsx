@@ -393,7 +393,7 @@ export default function BudgetsScreen() {
               return (
                 <TouchableOpacity
                   key={f.id}
-                  activeOpacity={0.7}
+                  activeOpacity={0.7} delayPressIn={0}
                   onPress={() => {
                     triggerHaptic.selection();
                     setFilterType(f.id as any);
@@ -511,13 +511,12 @@ export default function BudgetsScreen() {
                 },
               ]}
             >
-              <ScrollView style={{ maxHeight: 210 }} nestedScrollEnabled showsVerticalScrollIndicator={false}>
-                {CATEGORIES.map((cat) => {
+              {CATEGORIES.map((cat) => {
                   const isSelected = category === cat.name;
                   return (
                     <TouchableOpacity
                       key={cat.name}
-                      activeOpacity={0.7}
+                      activeOpacity={0.7} delayPressIn={0}
                       onPress={() => {
                         triggerHaptic.selection();
                         setCategory(cat.name);
@@ -554,7 +553,6 @@ export default function BudgetsScreen() {
                     </TouchableOpacity>
                   );
                 })}
-              </ScrollView>
             </View>
           )}
         </View>
@@ -575,7 +573,7 @@ export default function BudgetsScreen() {
             {[100000, 250000, 500000, 1000000, 2000000].map((presetVal) => (
               <TouchableOpacity
                 key={presetVal}
-                activeOpacity={0.7}
+                activeOpacity={0.7} delayPressIn={0}
                 onPress={() => handleSetPresetLimit(presetVal)}
                 style={[styles.presetChip, { backgroundColor: amount === presetVal.toString() ? colors.primary : (isDark ? '#0B0F19' : colors.surfaceElevated), borderColor: amount === presetVal.toString() ? colors.primary : (isDark ? '#1E293B' : colors.borderSubtle), borderWidth: 1.2 }]}
               >
@@ -661,7 +659,7 @@ export default function BudgetsScreen() {
             {/* Actions */}
             <View style={[styles.detailActionsRow, { borderTopColor: colors.borderSubtle }]}>
               <TouchableOpacity
-                activeOpacity={0.7}
+                activeOpacity={0.7} delayPressIn={0}
                 onPress={() => {
                   const b = selectedBudgetForDetail;
                   setSelectedBudgetForDetail(null);
@@ -674,7 +672,7 @@ export default function BudgetsScreen() {
               </TouchableOpacity>
 
               <TouchableOpacity
-                activeOpacity={0.7}
+                activeOpacity={0.7} delayPressIn={0}
                 onPress={() => handleDelete(selectedBudgetForDetail)}
                 style={[styles.actionBtn, { backgroundColor: colors.dangerLight, borderColor: 'rgba(239, 68, 68, 0.2)' }]}
               >

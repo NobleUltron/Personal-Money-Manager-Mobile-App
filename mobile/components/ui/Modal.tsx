@@ -40,7 +40,7 @@ export const Modal: React.FC<ModalProps> = ({
         <View style={styles.overlay}>
           <TouchableWithoutFeedback>
             <KeyboardAvoidingView
-              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+              behavior={Platform.OS === 'ios' ? 'padding' : undefined}
               style={styles.keyboardAvoid}
             >
               <View
@@ -75,6 +75,9 @@ export const Modal: React.FC<ModalProps> = ({
                   showsVerticalScrollIndicator={false}
                   keyboardShouldPersistTaps="handled"
                   bounces={false}
+                  overScrollMode="never"
+                  scrollEventThrottle={16}
+                  nestedScrollEnabled={true}
                 >
                   {children}
                 </ScrollView>
