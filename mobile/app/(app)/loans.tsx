@@ -32,6 +32,8 @@ import {
   Edit2,
   Trash2,
   Layers,
+  ChevronDown,
+  Check,
   HelpCircle,
 } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
@@ -81,6 +83,8 @@ export default function LoansScreen() {
   const [accountId, setAccountId] = useState('');
   const [syncAccount, setSyncAccount] = useState(true);
   const [formError, setFormError] = useState('');
+  const [showLoanAccountDropdown, setShowLoanAccountDropdown] = useState(false);
+  const [showRepayAccountDropdown, setShowRepayAccountDropdown] = useState(false);
 
   // Repay Form Fields
   const [repayAmount, setRepayAmount] = useState('');
@@ -202,6 +206,7 @@ export default function LoansScreen() {
   };
 
   const closeCreateModal = () => {
+    setShowLoanAccountDropdown(false);
     setCreateModalVisible(false);
     setEditingLoan(null);
   };
@@ -217,6 +222,7 @@ export default function LoansScreen() {
   };
 
   const closeRepayModal = () => {
+    setShowRepayAccountDropdown(false);
     setRepayModalVisible(false);
     setSelectedLoanForRepay(null);
   };
@@ -743,35 +749,94 @@ export default function LoansScreen() {
             {syncAccount && (
               <View style={{ marginBottom: Spacing.md }}>
                 <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Select Account</Text>
-                <View style={styles.chipsRow}>
-                  {accounts.map((acc) => (
-                    <TouchableOpacity
-                      key={acc.id}
-                      activeOpacity={0.7}
-                      onPress={() => {
-                        triggerHaptic.selection();
-                        setAccountId(acc.id);
-                      }}
-                      style={[
-                        styles.chip,
-                        {
-                          backgroundColor: accountId === acc.id ? colors.primary : colors.surfaceElevated,
-                          borderColor: accountId === acc.id ? colors.primary : colors.border,
-                        },
-                      ]}
-                    >
-                      <Text
-                        style={{
-                          color: accountId === acc.id ? '#FFFFFF' : colors.text,
-                          fontSize: 12,
-                          fontWeight: '700',
-                        }}
-                      >
-                        {acc.name}
+                <TouchableOpacity
+                  activeOpacity={0.75}
+                  onPress={() => {
+                    triggerHaptic.selection();
+                    setShowLoanAccountDropdown(!showLoanAccountDropdown);
+                  }}
+                  style={[
+                    styles.dropdownSelector,
+                    {
+                      backgroundColor: isDark ? '#0B0F19' : colors.surfaceElevated,
+                      borderColor: showLoanAccountDropdown ? colors.primary : (isDark ? '#1E293B' : colors.borderSubtle),
+                      borderWidth: 1.2,
+                    },
+                  ]}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, gap: 10 }}>
+                    <Landmark size={18} color={colors.primary} />
+                    <Text style={[styles.dropdownValueText, { color: colors.text }]}>
+                      {accounts.find((a) => a.id === accountId)?.name || 'Select Account'}
+                    </Text>
+                    {accountId && (
+                      <Text style={{ color: colors.textSecondary, fontSize: 12, marginLeft: 'auto', marginRight: 8 }}>
+                        {formatAmount(accounts.find((a) => a.id === accountId)?.balance, currencySymbol)}
                       </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
+                    )}
+                  </View>
+                  <ChevronDown
+                    size={18}
+                    color={colors.textSecondary}
+                    style={{ transform: [{ rotate: showLoanAccountDropdown ? '180deg' : '0deg' }] }}
+                  />
+                </TouchableOpacity>
+
+                {showLoanAccountDropdown && (
+                  <View
+                    style={[
+                      styles.dropdownList,
+                      {
+                        backgroundColor: isDark ? '#0B0F19' : colors.surfaceElevated,
+                        borderColor: isDark ? '#1E293B' : colors.borderSubtle,
+                        borderWidth: 1.2,
+                      },
+                    ]}
+                  >
+                    <ScrollView style={{ maxHeight: 180 }} nestedScrollEnabled showsVerticalScrollIndicator={false}>
+                      {accounts.map((acc) => {
+                        const isSelected = accountId === acc.id;
+                        return (
+                          <TouchableOpacity
+                            key={acc.id}
+                            activeOpacity={0.7}
+                            onPress={() => {
+                              triggerHaptic.selection();
+                              setAccountId(acc.id);
+                              setShowLoanAccountDropdown(false);
+                            }}
+                            style={[
+                              styles.dropdownItem,
+                              isSelected && {
+                                backgroundColor: isDark ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.1)',
+                              },
+                              { borderBottomColor: isDark ? '#1E293B' : colors.borderSubtle },
+                            ]}
+                          >
+                            <Landmark size={16} color={isSelected ? colors.primary : colors.textSecondary} style={{ marginRight: 10 }} />
+                            <View style={{ flex: 1 }}>
+                              <Text
+                                style={[
+                                  styles.dropdownItemText,
+                                  {
+                                    color: isSelected ? colors.primary : colors.text,
+                                    fontWeight: isSelected ? '800' : '600',
+                                  },
+                                ]}
+                              >
+                                {acc.name}
+                              </Text>
+                              <Text style={{ fontSize: 11, color: colors.textSecondary }}>
+                                Balance: {formatAmount(acc.balance, currencySymbol)}
+                              </Text>
+                            </View>
+                            {isSelected && <Check size={16} color={colors.primary} strokeWidth={2.6} />}
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </ScrollView>
+                  </View>
+                )}
               </View>
             )}
           </>
@@ -860,35 +925,94 @@ export default function LoansScreen() {
           {repaySyncAccount && (
             <View style={{ marginBottom: Spacing.md }}>
               <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Account</Text>
-              <View style={styles.chipsRow}>
-                {accounts.map((acc) => (
-                  <TouchableOpacity
-                    key={acc.id}
-                    activeOpacity={0.7}
-                    onPress={() => {
-                      triggerHaptic.selection();
-                      setRepayAccountId(acc.id);
-                    }}
-                    style={[
-                      styles.chip,
-                      {
-                        backgroundColor: repayAccountId === acc.id ? colors.primary : colors.surfaceElevated,
-                        borderColor: repayAccountId === acc.id ? colors.primary : colors.border,
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={{
-                        color: repayAccountId === acc.id ? '#FFFFFF' : colors.text,
-                        fontSize: 12,
-                        fontWeight: '700',
-                      }}
-                    >
-                      {acc.name}
+              <TouchableOpacity
+                activeOpacity={0.75}
+                onPress={() => {
+                  triggerHaptic.selection();
+                  setShowRepayAccountDropdown(!showRepayAccountDropdown);
+                }}
+                style={[
+                  styles.dropdownSelector,
+                  {
+                    backgroundColor: isDark ? '#0B0F19' : colors.surfaceElevated,
+                    borderColor: showRepayAccountDropdown ? colors.primary : (isDark ? '#1E293B' : colors.borderSubtle),
+                    borderWidth: 1.2,
+                  },
+                ]}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, gap: 10 }}>
+                  <Landmark size={18} color={colors.primary} />
+                  <Text style={[styles.dropdownValueText, { color: colors.text }]}>
+                    {accounts.find((a) => a.id === repayAccountId)?.name || 'Select Account'}
+                  </Text>
+                  {repayAccountId && (
+                    <Text style={{ color: colors.textSecondary, fontSize: 12, marginLeft: 'auto', marginRight: 8 }}>
+                      {formatAmount(accounts.find((a) => a.id === repayAccountId)?.balance, currencySymbol)}
                     </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+                  )}
+                </View>
+                <ChevronDown
+                  size={18}
+                  color={colors.textSecondary}
+                  style={{ transform: [{ rotate: showRepayAccountDropdown ? '180deg' : '0deg' }] }}
+                />
+              </TouchableOpacity>
+
+              {showRepayAccountDropdown && (
+                <View
+                  style={[
+                    styles.dropdownList,
+                    {
+                      backgroundColor: isDark ? '#0B0F19' : colors.surfaceElevated,
+                      borderColor: isDark ? '#1E293B' : colors.borderSubtle,
+                      borderWidth: 1.2,
+                    },
+                  ]}
+                >
+                  <ScrollView style={{ maxHeight: 180 }} nestedScrollEnabled showsVerticalScrollIndicator={false}>
+                    {accounts.map((acc) => {
+                      const isSelected = repayAccountId === acc.id;
+                      return (
+                        <TouchableOpacity
+                          key={acc.id}
+                          activeOpacity={0.7}
+                          onPress={() => {
+                            triggerHaptic.selection();
+                            setRepayAccountId(acc.id);
+                            setShowRepayAccountDropdown(false);
+                          }}
+                          style={[
+                            styles.dropdownItem,
+                            isSelected && {
+                              backgroundColor: isDark ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.1)',
+                            },
+                            { borderBottomColor: isDark ? '#1E293B' : colors.borderSubtle },
+                          ]}
+                        >
+                          <Landmark size={16} color={isSelected ? colors.primary : colors.textSecondary} style={{ marginRight: 10 }} />
+                          <View style={{ flex: 1 }}>
+                            <Text
+                              style={[
+                                styles.dropdownItemText,
+                                {
+                                  color: isSelected ? colors.primary : colors.text,
+                                  fontWeight: isSelected ? '800' : '600',
+                                },
+                              ]}
+                            >
+                              {acc.name}
+                            </Text>
+                            <Text style={{ fontSize: 11, color: colors.textSecondary }}>
+                              Balance: {formatAmount(acc.balance, currencySymbol)}
+                            </Text>
+                          </View>
+                          {isSelected && <Check size={16} color={colors.primary} strokeWidth={2.6} />}
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
+                </View>
+              )}
             </View>
           )}
 
@@ -1395,6 +1519,32 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
   },
+  dropdownSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.md,
+    height: 48,
+    borderRadius: Radius.lg,
+  },
+  dropdownValueText: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  dropdownList: {
+    marginTop: 6,
+    borderRadius: Radius.lg,
+    overflow: 'hidden',
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 11,
+    borderBottomWidth: 1,
+  },
+  dropdownItemText: {
+    fontSize: 13,
+    flex: 1,
+  },
 });
-
-

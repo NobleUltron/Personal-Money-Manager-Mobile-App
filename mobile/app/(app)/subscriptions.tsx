@@ -88,6 +88,7 @@ export default function SubscriptionsScreen() {
   const [nextDueDate, setNextDueDate] = useState(new Date().toISOString().split('T')[0]);
   const [category, setCategory] = useState('Entertainment');
   const [formError, setFormError] = useState('');
+  const [showAccountDropdown, setShowAccountDropdown] = useState(false);
 
   // 1. Fetch Subscriptions & Accounts
   const { data: subscriptions, isLoading, refetch, isRefetching } = useQuery({
@@ -173,6 +174,7 @@ export default function SubscriptionsScreen() {
     setAccountId(accounts && accounts.length > 0 ? accounts[0].id : '');
     setNextDueDate(new Date().toISOString().split('T')[0]);
     setFormError('');
+    setShowAccountDropdown(false);
     setModalVisible(true);
   };
 
@@ -992,5 +994,33 @@ const styles = StyleSheet.create({
   presetChipText: {
     fontSize: 11,
     fontWeight: '700',
+  },
+  dropdownSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.md,
+    height: 48,
+    borderRadius: Radius.lg,
+  },
+  dropdownValueText: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  dropdownList: {
+    marginTop: 6,
+    borderRadius: Radius.lg,
+    overflow: 'hidden',
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 11,
+    borderBottomWidth: 1,
+  },
+  dropdownItemText: {
+    fontSize: 13,
+    flex: 1,
   },
 });
