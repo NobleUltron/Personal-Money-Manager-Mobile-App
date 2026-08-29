@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AlertCircle, CheckCircle2, ChevronRight, Edit3, Flame, TrendingUp, AlertTriangle, Sparkles } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -45,14 +45,17 @@ export const BudgetProgress: React.FC<BudgetProgressProps> = ({
   const { colors, isDark } = useTheme();
   const { formatAmount } = usePrivacy();
 
-  const lowerCat = budget.category.toLowerCase();
+  const categoryName = budget?.category || 'General';
+  const lowerCat = categoryName.toLowerCase();
   const matchedKey = Object.keys(CATEGORY_ICONS).find((k) => lowerCat.includes(k));
   const catStyle = matchedKey
     ? CATEGORY_ICONS[matchedKey]
     : { icon: '📊', bg: 'rgba(99, 102, 241, 0.15)', color: colors.primary };
 
-  const pct = Math.min(Math.max(Number(budget.percentage) || 0, 0), 100);
-  const isOver = budget.isOver || Number(budget.spent) > Number(budget.amount);
+  const budgetAmount = Number(budget?.amount) || 0;
+  const budgetSpent = Number(budget?.spent) || 0;
+  const pct = Math.min(Math.max(Number(budget?.percentage) || (budgetAmount > 0 ? Math.round((budgetSpent / budgetAmount) * 100) : 0), 0), 100);
+  const isOver = budget?.isOver || budgetSpent > budgetAmount;
   const isNearLimit = !isOver && pct >= 80;
 
   // Status colors & labels
@@ -73,7 +76,9 @@ export const BudgetProgress: React.FC<BudgetProgressProps> = ({
     progressGradient = ['#F59E0B', '#D97706'];
   }
 
-  const remaining = Number(budget.remaining) || (Number(budget.amount) - Number(budget.spent));
+  const remaining = budget?.remaining !== undefined && budget?.remaining !== null
+    ? Number(budget.remaining)
+    : (budgetAmount - budgetSpent);
 
   return (
     <Card
@@ -94,10 +99,10 @@ export const BudgetProgress: React.FC<BudgetProgressProps> = ({
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[styles.categoryTitle, { color: colors.text }]} numberOfLines={1}>
-              {budget.category}
+              {categoryName}
             </Text>
             <Text style={[styles.limitSubtext, { color: colors.textSecondary }]}>
-              Limit: {formatAmount(budget.amount, currencySymbol)}
+              Limit: {formatAmount(budgetAmount, currencySymbol)}
             </Text>
           </View>
         </View>
@@ -116,7 +121,7 @@ export const BudgetProgress: React.FC<BudgetProgressProps> = ({
       </View>
 
       {/* Progress Bar */}
-      <View style={[styles.progressTrack, { backgroundColor: colors.surfaceElevated }]}>
+      <View style={[styles.progressTrack, { backgroundColor: isDark ? '#1E293B' : colors.surfaceElevated }]}>
         <LinearGradient
           colors={progressGradient as any}
           start={{ x: 0, y: 0 }}
@@ -130,7 +135,7 @@ export const BudgetProgress: React.FC<BudgetProgressProps> = ({
         <View>
           <Text style={[styles.spentLabel, { color: colors.textSecondary }]}>Spent</Text>
           <Text style={[styles.spentValue, { color: isOver ? colors.danger : colors.text }]}>
-            {formatAmount(budget.spent, currencySymbol)}
+            {formatAmount(budgetSpent, currencySymbol)}
           </Text>
         </View>
 

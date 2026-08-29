@@ -1,4 +1,4 @@
-﻿import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import { AppState, AppStateStatus, Platform, StyleSheet, View, Text } from 'react-native';
 import { Shield } from 'lucide-react-native';
@@ -7,7 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 interface PrivacyContextType {
   hideBalances: boolean;
   toggleHideBalances: () => void;
-  formatAmount: (amount: number | string, currencySymbol?: string) => string;
+  formatAmount: (amount?: number | string | null, currencySymbol?: string) => string;
   isPrivacyShieldEnabled: boolean;
   togglePrivacyShield: (enabled: boolean) => Promise<void>;
 }
@@ -88,12 +88,16 @@ export const PrivacyProvider: React.FC<{ children: React.ReactNode }> = ({ child
     } catch {}
   };
 
-  const formatAmount = (amount: number | string, currencySymbol: string = 'UGX'): string => {
+  const formatAmount = (amount?: number | string | null, currencySymbol: string = 'UGX'): string => {
     if (hideBalances) {
       return `${currencySymbol} ••••••`;
     }
-    const num = typeof amount === 'string' ? parseFloat(amount) || 0 : amount;
-    return `${currencySymbol} ${num.toLocaleString()}`;
+    if (amount === undefined || amount === null) {
+      return `${currencySymbol} 0`;
+    }
+    const parsed = typeof amount === 'string' ? parseFloat(amount) : Number(amount);
+    const validNum = isNaN(parsed) || !isFinite(parsed) ? 0 : parsed;
+    return `${currencySymbol} ${validNum.toLocaleString()}`;
   };
 
   return (
