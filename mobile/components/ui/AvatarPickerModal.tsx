@@ -67,7 +67,7 @@ export const AvatarPickerModal: React.FC<AvatarPickerModalProps> = ({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [1, 1],
-        quality: 0.6,
+        quality: 0.35,
         base64: true,
       });
 
@@ -105,7 +105,7 @@ export const AvatarPickerModal: React.FC<AvatarPickerModalProps> = ({
       const result = await ImagePicker.launchCameraAsync({
         allowsEditing: true,
         aspect: [1, 1],
-        quality: 0.6,
+        quality: 0.35,
         base64: true,
       });
 

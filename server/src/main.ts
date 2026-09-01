@@ -3,6 +3,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 import * as cors from 'cors';
+import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
 import { BigIntSerializerInterceptor } from './common/interceptors/bigint-serializer.interceptor';
 
@@ -12,6 +13,8 @@ async function bootstrap() {
   // Security Headers & CORS
   app.use(helmet({ contentSecurityPolicy: false }));
   app.use(cors({ origin: '*', credentials: true }));
+  app.use(json({ limit: '15mb' }));
+  app.use(urlencoded({ extended: true, limit: '15mb' }));
 
   // Global Interceptors & Validation
   app.useGlobalInterceptors(new BigIntSerializerInterceptor());
