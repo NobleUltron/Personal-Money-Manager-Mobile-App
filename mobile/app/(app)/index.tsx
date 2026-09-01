@@ -47,6 +47,7 @@ import {
   CheckCircle2,
 } from 'lucide-react-native';
 
+import { P2PTransferModal } from '../../components/financial/P2PTransferModal';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { usePrivacy } from '../../context/PrivacyContext';
@@ -852,6 +853,11 @@ export default function DashboardScreen() {
       </ScrollView>
 
       {/* MODALS */}
+      <P2PTransferModal
+        visible={p2pModalVisible}
+        onClose={() => setP2pModalVisible(false)}
+      />
+
       <NotificationCenterModal
         visible={notifModalVisible}
         onClose={() => setNotifModalVisible(false)}
