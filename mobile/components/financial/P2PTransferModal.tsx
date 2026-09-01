@@ -13,6 +13,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Send,
+  Share2,
   User as UserIcon,
   CheckCircle2,
   Landmark,
@@ -28,6 +29,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { usePrivacy } from '../../context/PrivacyContext';
 import { accountsApi, transfersApi } from '../../services/api';
+import { generateAndShareTransferReceipt } from '../../services/export/receiptGenerator';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { triggerHaptic } from '../../utils/haptics';
@@ -207,12 +209,33 @@ export const P2PTransferModal: React.FC<P2PTransferModalProps> = ({
             </View>
           </View>
 
-          <Button
-            title="Done"
-            size="lg"
-            onPress={handleClose}
-            style={{ width: '100%', marginTop: Spacing.md }}
-          />
+          {/* Action Buttons: Share Receipt & Done */}
+          <View style={{ width: '100%', gap: Spacing.sm, marginTop: Spacing.md }}>
+            <Button
+              title="Share Receipt (WhatsApp / PDF)"
+              variant="outline"
+              size="lg"
+              onPress={async () => {
+                triggerHaptic.selection();
+                await generateAndShareTransferReceipt({
+                  amount: successReceipt.amount,
+                  currencySymbol,
+                  senderUsername: user?.username || 'user',
+                  senderAccount: successReceipt.sender?.account || 'Wallet',
+                  recipientUsername: successReceipt.recipient?.username || 'user',
+                  recipientAccount: successReceipt.recipient?.account,
+                  date: successReceipt.date || new Date(),
+                  reason,
+                });
+              }}
+            />
+
+            <Button
+              title="Done"
+              size="lg"
+              onPress={handleClose}
+            />
+          </View>
         </View>
       ) : (
         // FORM VIEW
