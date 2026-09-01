@@ -55,11 +55,13 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error),
 );
 
-// Response Interceptor: Format errors nicely
+// Response Interceptor: Format errors nicely with metadata preserved
 apiClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError<any>) => {
     let errorMessage = 'An unexpected error occurred. Please try again.';
+    const statusCode = error.response?.status;
+    const isNetworkError = !error.response || error.message === 'Network Error' || error.code === 'ECONNABORTED';
 
     if (error.response?.data) {
       const data = error.response.data;
@@ -74,6 +76,10 @@ apiClient.interceptors.response.use(
       errorMessage = 'Server is waking up from cold sleep. Please tap Sign In again in a few moments.';
     }
 
-    return Promise.reject(new Error(errorMessage));
+    const enhancedError: any = new Error(errorMessage);
+    enhancedError.statusCode = statusCode;
+    enhancedError.isNetworkError = isNetworkError;
+    enhancedError.response = error.response;
+    return Promise.reject(enhancedError);
   },
 );

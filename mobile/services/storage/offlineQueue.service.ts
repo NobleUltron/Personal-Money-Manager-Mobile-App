@@ -78,22 +78,18 @@ export const OfflineQueueService = {
         }
         processed++;
       } catch (error: any) {
-        // If it's a network disconnection error, preserve in queue for next sync attempt
-        const isNetworkError =
-          error?.message?.includes('Network') ||
-          error?.message?.includes('connect') ||
-          error?.code === 'ECONNABORTED' ||
-          !error?.response;
+        const isExplicitClientError = error?.statusCode && error.statusCode >= 400 && error.statusCode < 500;
+        const isNetworkError = Boolean(error?.isNetworkError) && !isExplicitClientError;
 
-        if (isNetworkError) {
+        // If it was a genuine network dropout and hasn't exceeded 2 retries, keep it
+        if (isNetworkError && (mutation.retryCount || 0) < 2) {
           mutation.retryCount = (mutation.retryCount || 0) + 1;
           remaining.push(mutation);
           failed++;
-          // Break early if we're still offline
           break;
         } else {
-          // If server explicitly rejected with 4xx, log and drop to prevent queue blocking
-          console.warn(`[OfflineQueue] Server rejected mutation ${mutation.id}:`, error);
+          // Explicit server rejection (4xx) or max retries reached: drop from queue
+          console.warn(`[OfflineQueue] Dropping unresolvable mutation ${mutation.id}:`, error?.message);
           failed++;
         }
       }

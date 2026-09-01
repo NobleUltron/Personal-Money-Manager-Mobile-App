@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -16,7 +16,7 @@ import { Radius, Spacing, Typography } from '../../constants/theme';
 
 export const OfflineBanner: React.FC = () => {
   const insets = useSafeAreaInsets();
-  const { isOnline, isSyncing, pendingCount, syncNow } = useSync();
+  const { isOnline, isSyncing, pendingCount, syncNow, clearQueue } = useSync();
   const { colors } = useTheme();
 
   const isVisible = !isOnline || isSyncing || pendingCount > 0;
@@ -95,6 +95,25 @@ export const OfflineBanner: React.FC = () => {
 
   const config = getBannerConfig();
 
+  const handleBannerPress = async () => {
+    if (config.action) {
+      await syncNow();
+    }
+  };
+
+  const handleLongPress = () => {
+    if (pendingCount > 0) {
+      Alert.alert(
+        'Discard Unsynced Changes?',
+        'Do you want to clear these pending local changes from the upload queue?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Discard', style: 'destructive', onPress: clearQueue },
+        ]
+      );
+    }
+  };
+
   return (
     <Animated.View
       style={[
@@ -106,7 +125,8 @@ export const OfflineBanner: React.FC = () => {
     >
       <TouchableOpacity
         activeOpacity={config.action ? 0.85 : 1}
-        onPress={config.action ? syncNow : undefined}
+        onPress={handleBannerPress}
+        onLongPress={handleLongPress}
         style={[styles.pill, { backgroundColor: config.bg }]}
       >
         <View style={styles.contentRow}>

@@ -11,6 +11,7 @@ interface SyncContextType {
   pendingCount: number;
   lastSyncTime: number | null;
   syncNow: () => Promise<void>;
+  clearQueue: () => Promise<void>;
   enqueueOfflineMutation: (
     type: PendingMutation['type'],
     payload: any
@@ -23,6 +24,7 @@ const SyncContext = createContext<SyncContextType>({
   pendingCount: 0,
   lastSyncTime: null,
   syncNow: async () => {},
+  clearQueue: async () => {},
   enqueueOfflineMutation: async () => ({} as any),
 });
 
@@ -124,6 +126,12 @@ export const SyncProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [checkNetworkStatus, refreshPendingCount, syncNow]);
 
+  const clearQueue = useCallback(async () => {
+    await OfflineQueueService.clearQueue();
+    await refreshPendingCount();
+    triggerHaptic.warning();
+  }, [refreshPendingCount]);
+
   const enqueueOfflineMutation = async (
     type: PendingMutation['type'],
     payload: any
@@ -141,6 +149,7 @@ export const SyncProvider: React.FC<{ children: React.ReactNode }> = ({ children
         pendingCount,
         lastSyncTime,
         syncNow,
+        clearQueue,
         enqueueOfflineMutation,
       }}
     >
