@@ -158,6 +158,36 @@ export const transfersApi = {
     const res = await apiClient.post('/api/transfers', data);
     return res.data;
   },
+
+  async lookupUser(query: string): Promise<Array<{
+    id: string;
+    username: string;
+    email: string | null;
+    profile_picture: string | null;
+    currency: string;
+    currency_symbol: string;
+  }>> {
+    const res = await apiClient.get('/api/transfers/lookup', { params: { query } });
+    return res.data;
+  },
+
+  async sendP2P(data: {
+    fromAccountId: string;
+    recipientUsername: string;
+    amount: number;
+    reason?: string;
+    date?: string;
+  }): Promise<{
+    success: boolean;
+    message: string;
+    amount: number;
+    sender: { username: string; account: string };
+    recipient: { username: string; profilePicture: string | null; account: string };
+    date: string;
+  }> {
+    const res = await apiClient.post('/api/transfers/p2p', data);
+    return res.data;
+  },
 };
 
 export const budgetsApi = {

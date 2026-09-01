@@ -26,3 +26,30 @@ export class CreateTransferDto {
   @IsOptional()
   reason?: string;
 }
+
+export class P2PTransferDto {
+  @ApiProperty({ example: 'acc-uuid-source' })
+  @IsString()
+  @IsNotEmpty()
+  fromAccountId: string;
+
+  @ApiProperty({ example: 'noble_user' })
+  @IsString()
+  @IsNotEmpty()
+  recipientUsername: string;
+
+  @ApiProperty({ example: 50000 })
+  @IsNumber()
+  @Min(0.01)
+  amount: number;
+
+  @ApiProperty({ example: 'Lunch contribution', required: false })
+  @IsString()
+  @IsOptional()
+  reason?: string;
+
+  @ApiProperty({ example: '2026-09-01', required: false })
+  @IsDateString()
+  @IsOptional()
+  date?: string;
+}

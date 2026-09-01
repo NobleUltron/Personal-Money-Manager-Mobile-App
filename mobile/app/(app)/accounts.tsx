@@ -15,6 +15,7 @@ import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
   Plus,
+  Send,
   Landmark,
   Smartphone,
   Wallet,
@@ -47,6 +48,7 @@ import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { AccountCard } from '../../components/financial/AccountCard';
 import { ManageMembersModal } from '../../components/financial/ManageMembersModal';
 import { JoinSharedWalletModal } from '../../components/financial/JoinSharedWalletModal';
+import { P2PTransferModal } from '../../components/financial/P2PTransferModal';
 import { SkeletonList } from '../../components/ui/Skeleton';
 import { triggerHaptic } from '../../utils/haptics';
 import { Account } from '../../types';
@@ -88,6 +90,7 @@ export default function AccountsScreen() {
   // Sharing & Member Modals
   const [manageMembersAccount, setManageMembersAccount] = useState<Account | null>(null);
   const [joinModalVisible, setJoinModalVisible] = useState<boolean>(false);
+  const [p2pModalVisible, setP2pModalVisible] = useState<boolean>(false);
 
   // Modal States
   const [modalVisible, setModalVisible] = useState(false);
@@ -469,6 +472,9 @@ export default function AccountsScreen() {
               );
             })}
           </ScrollView>
+
+      {/* P2P User Transfer Modal */}
+      <P2PTransferModal visible={p2pModalVisible} onClose={() => setP2pModalVisible(false)} />
         </View>
 
         {/* 3. Accounts List */}

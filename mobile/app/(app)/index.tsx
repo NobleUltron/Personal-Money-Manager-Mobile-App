@@ -25,6 +25,7 @@ import {
   Landmark,
   PiggyBank,
   Plus,
+  Send,
   Repeat,
   Target,
   TrendingUp,
@@ -74,6 +75,7 @@ export default function DashboardScreen() {
   const { unreadCount, syncAllBillReminders, checkAndNotifyBudgetLimits } = useNotifications();
   const [notifModalVisible, setNotifModalVisible] = React.useState(false);
   const [weeklyDigestVisible, setWeeklyDigestVisible] = React.useState(false);
+  const [p2pModalVisible, setP2pModalVisible] = React.useState(false);
   const [netWorthBreakdownVisible, setNetWorthBreakdownVisible] = React.useState(false);
   const router = useRouter();
   const { width } = useWindowDimensions();
@@ -202,6 +204,14 @@ export default function DashboardScreen() {
   };
 
   const FINTECH_SERVICES = [
+    {
+      id: 'p2p',
+      title: 'Send Money',
+      icon: Send,
+      color: '#10B981',
+      bg: 'rgba(16, 185, 129, 0.14)',
+      action: () => setP2pModalVisible(true),
+    },
     {
       id: 'transfer',
       title: 'Transfers',
