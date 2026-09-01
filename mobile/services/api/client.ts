@@ -35,7 +35,7 @@ export const API_BASE_URL = getBaseUrl();
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 15000,
+  timeout: 45000,
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',
@@ -70,7 +70,7 @@ apiClient.interceptors.response.use(
     } else if (error.message === 'Network Error') {
       errorMessage = 'Cannot connect to server. Please check your internet connection or server status.';
     } else if (error.code === 'ECONNABORTED') {
-      errorMessage = 'Request timed out. Please try again.';
+      errorMessage = 'Server is waking up from cold sleep. Please tap Sign In again in a few moments.';
     }
 
     return Promise.reject(new Error(errorMessage));
